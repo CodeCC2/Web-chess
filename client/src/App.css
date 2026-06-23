@@ -1,0 +1,238 @@
+.app {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.subtitle {
+  color: #9ca3af;
+  margin-top: 6px;
+}
+
+/* Lobby */
+.lobby {
+  max-width: 460px;
+  text-align: center;
+}
+
+.card {
+  margin-top: 24px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #0b1120;
+  color: #e5e7eb;
+  font-size: 1rem;
+}
+
+input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: #374151;
+  color: #e5e7eb;
+  transition: filter 0.15s ease;
+}
+
+button:hover {
+  filter: brightness(1.15);
+}
+
+button.primary {
+  background: #6366f1;
+  color: white;
+}
+
+button.danger {
+  background: #dc2626;
+  color: white;
+}
+
+button.link {
+  background: none;
+  color: #818cf8;
+  padding: 0 6px;
+  font-size: 0.8rem;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.notice {
+  color: #fbbf24;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.status {
+  color: #9ca3af;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* Game */
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.room-badge {
+  background: #111827;
+  border: 1px solid #1f2937;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.game-body {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.board-wrap {
+  flex: 0 0 auto;
+}
+
+.panel {
+  flex: 1 1 240px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-section {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.you {
+  margin-bottom: 8px;
+}
+
+.chip {
+  text-transform: capitalize;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.chip.white {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.chip.black {
+  background: #000;
+  color: #f9fafb;
+  border: 1px solid #374151;
+}
+
+.chip.spectator {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+.turn {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot[data-turn="white"] {
+  background: #f9fafb;
+}
+
+.dot[data-turn="black"] {
+  background: #000;
+  border: 1px solid #6b7280;
+}
+
+.check {
+  color: #f87171;
+  font-weight: 700;
+}
+
+.gameover {
+  color: #34d399;
+  font-size: 1.05rem;
+}
+
+.players {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.moves h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+.moves ol {
+  margin: 0;
+  padding-left: 22px;
+  max-height: 220px;
+  overflow-y: auto;
+  columns: 2;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
