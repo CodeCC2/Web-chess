@@ -16,6 +16,8 @@ export default function App() {
   const [state, setState] = useState(null);
   const [notice, setNotice] = useState("");
   const [connected, setConnected] = useState(socket.connected);
+  const [moveFrom, setMoveFrom] = useState(null);
+  const [optionSquares, setOptionSquares] = useState({});
 
   useEffect(() => {
     function onConnect() {
@@ -26,6 +28,8 @@ export default function App() {
     }
     function onGameState(s) {
       setState(s);
+      setMoveFrom(null);
+      setOptionSquares({});
     }
     function onOpponentJoined() {
       setNotice("Opponent joined the game.");
@@ -84,18 +88,18 @@ export default function App() {
     [name, roomInput]
   );
 
-  const onPieceDrop = useCallback(
-    (sourceSquare, targetSquare, piece) => {
+  const attemptMove = useCallback(
+    (sourceSquare, targetSquare) => {
       if (!state || !roomId) return false;
-      const turn = state.turn;
-      if (color !== turn) return false;
-
-      const isPromotion =
-        piece &&
-        piece[1] === "P" &&
-        (targetSquare[1] === "8" || targetSquare[1] === "1");
+      if (color !== state.turn) return false;
 
       const probe = new Chess(state.fen);
+      const piece = probe.get(sourceSquare);
+      const isPromotion =
+        piece &&
+        piece.type === "p" &&
+        (targetSquare[1] === "8" || targetSquare[1] === "1");
+
       let legal = null;
       try {
         legal = probe.move({
@@ -119,19 +123,103 @@ export default function App() {
     [state, roomId, color]
   );
 
+  const onPieceDrop = useCallback(
+    (sourceSquare, targetSquare) => {
+      setMoveFrom(null);
+      setOptionSquares({});
+      return attemptMove(sourceSquare, targetSquare);
+    },
+    [attemptMove]
+  );
+
+  const highlightLegalMoves = useCallback(
+    (square) => {
+      if (!state) return false;
+      const probe = new Chess(state.fen);
+      const moves = probe.moves({ square, verbose: true });
+      if (moves.length === 0) return false;
+      const styles = {};
+      for (const m of moves) {
+        styles[m.to] = {
+          background:
+            "radial-gradient(circle, rgba(99,102,241,0.55) 25%, transparent 28%)",
+          borderRadius: "50%",
+        };
+      }
+      styles[square] = { background: "rgba(99,102,241,0.35)" };
+      setOptionSquares(styles);
+      return true;
+    },
+    [state]
+  );
+
+  const onSquareClick = useCallback(
+    (square) => {
+      const finished =
+        state &&
+        ["checkmate", "resign", "stalemate", "draw", "insufficient_material", "threefold_repetition"].includes(
+          state.status
+        );
+      if (!state || color === "spectator" || finished) return;
+      if (color !== state.turn) return;
+
+      if (!moveFrom) {
+        const probe = new Chess(state.fen);
+        const piece = probe.get(square);
+        const myTurnColor = color === "white" ? "w" : "b";
+        if (piece && piece.color === myTurnColor && highlightLegalMoves(square)) {
+          setMoveFrom(square);
+        }
+        return;
+      }
+
+      if (square === moveFrom) {
+        setMoveFrom(null);
+        setOptionSquares({});
+        return;
+      }
+
+      const moved = attemptMove(moveFrom, square);
+      if (moved) {
+        setMoveFrom(null);
+        setOptionSquares({});
+      } else {
+        // Allow reselecting another of your own pieces.
+        const probe = new Chess(state.fen);
+        const piece = probe.get(square);
+        const myTurnColor = color === "white" ? "w" : "b";
+        if (piece && piece.color === myTurnColor && highlightLegalMoves(square)) {
+          setMoveFrom(square);
+        } else {
+          setMoveFrom(null);
+          setOptionSquares({});
+        }
+      }
+    },
+    [state, color, moveFrom, attemptMove, highlightLegalMoves]
+  );
+
   const gameOver = useMemo(() => {
     if (!state) return null;
     const s = state.status;
-    if (s === "checkmate")
-      return `Checkmate — ${state.winner} wins!`;
-    if (s === "resign")
-      return `Opponent resigned — ${state.winner} wins!`;
+    const outcome = (winner) => {
+      if (color === "spectator") return `${winner} wins!`;
+      return winner === color ? "you win!" : "you lose.";
+    };
+    if (s === "checkmate") return `Checkmate — ${outcome(state.winner)}`;
+    if (s === "resign") {
+      if (color === "spectator")
+        return `A player resigned — ${state.winner} wins!`;
+      return state.winner === color
+        ? "Opponent resigned — you win!"
+        : "You resigned — you lose.";
+    }
     if (s === "stalemate") return "Draw — stalemate.";
     if (s === "draw") return "Draw.";
     if (s === "insufficient_material") return "Draw — insufficient material.";
     if (s === "threefold_repetition") return "Draw — threefold repetition.";
     return null;
-  }, [state]);
+  }, [state, color]);
 
   if (!roomId) {
     return (
@@ -195,10 +283,12 @@ export default function App() {
             id="online-board"
             position={state?.fen}
             onPieceDrop={onPieceDrop}
+            onSquareClick={onSquareClick}
             boardOrientation={color === "black" ? "black" : "white"}
             arePiecesDraggable={
               color !== "spectator" && !gameOver && state?.turn === color
             }
+            customSquareStyles={optionSquares}
             boardWidth={Math.min(480, window.innerWidth - 32)}
             customBoardStyle={{
               borderRadius: "8px",
