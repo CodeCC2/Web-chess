@@ -4,7 +4,7 @@ import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
-  { ignores: ["dist", "src/tutorial/build-lessons.mjs"] },
+  { ignores: ["dist", "src/tutorial/build-lessons.mjs", "src/puzzle/build-puzzles.mjs"] },
   js.configs.recommended,
   {
     files: ["**/*.{js,jsx}"],

@@ -6,7 +6,10 @@ import LocalGame from "./LocalGame.jsx";
 import MoveList from "./MoveList.jsx";
 import LessonPicker from "./tutorial/LessonPicker.jsx";
 import TutorialGame from "./tutorial/TutorialGame.jsx";
+import PuzzlePicker from "./puzzle/PuzzlePicker.jsx";
+import PuzzleGame from "./puzzle/PuzzleGame.jsx";
 import { lessons } from "./tutorial/lessons.js";
+import { puzzles } from "./puzzle/puzzles.js";
 import { DIFFICULTY_LABELS } from "./bot.js";
 import PromotionPicker from "./PromotionPicker.jsx";
 import ChessClock from "./ChessClock.jsx";
@@ -52,6 +55,9 @@ export default function App() {
 
   const [tutorialLesson, setTutorialLesson] = useState(null);
   const [showLessonPicker, setShowLessonPicker] = useState(false);
+
+  const [activePuzzle, setActivePuzzle] = useState(null);
+  const [showPuzzlePicker, setShowPuzzlePicker] = useState(false);
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -259,6 +265,23 @@ export default function App() {
     }
   }, [tutorialLesson]);
 
+  const handlePuzzleNext = useCallback(() => {
+    if (!activePuzzle) return;
+    const idx = puzzles.findIndex((p) => p.id === activePuzzle.id);
+    if (idx >= 0 && idx + 1 < puzzles.length) {
+      setActivePuzzle(puzzles[idx + 1]);
+    } else {
+      setActivePuzzle(null);
+      setShowPuzzlePicker(true);
+    }
+  }, [activePuzzle]);
+
+  const pickRandomPuzzle = useCallback(() => {
+    const puzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
+    setActivePuzzle(puzzle);
+    setShowPuzzlePicker(false);
+  }, []);
+
   const goHome = useCallback(() => {
     if (roomId) {
       socket.emit("leaveGame", {}, () => {});
@@ -272,7 +295,35 @@ export default function App() {
     setBotConfig(null);
     setTutorialLesson(null);
     setShowLessonPicker(false);
+    setActivePuzzle(null);
+    setShowPuzzlePicker(false);
   }, [roomId, resetBoardUi]);
+
+  if (activePuzzle) {
+    return (
+      <PuzzleGame
+        puzzle={activePuzzle}
+        onExit={() => {
+          setActivePuzzle(null);
+          setShowPuzzlePicker(false);
+        }}
+        onNext={handlePuzzleNext}
+      />
+    );
+  }
+
+  if (showPuzzlePicker) {
+    return (
+      <PuzzlePicker
+        onSelect={(puzzle) => {
+          setActivePuzzle(puzzle);
+          setShowPuzzlePicker(false);
+        }}
+        onRandom={pickRandomPuzzle}
+        onBack={() => setShowPuzzlePicker(false)}
+      />
+    );
+  }
 
   if (tutorialLesson) {
     return (
@@ -335,6 +386,12 @@ export default function App() {
               onClick={() => setLobbyMode("tutorial")}
             >
               สอนเล่น
+            </button>
+            <button
+              className={lobbyMode === "puzzle" ? "tab active" : "tab"}
+              onClick={() => setLobbyMode("puzzle")}
+            >
+              Puzzle
             </button>
           </div>
 
@@ -423,7 +480,7 @@ export default function App() {
                 </button>
               </div>
             </>
-          ) : (
+          ) : lobbyMode === "tutorial" ? (
             <>
               <p className="tutorial-lobby-desc">
                 เรียนรู้การเปิดเกมยอดนิยม เช่น Ruy Lopez, Queen&apos;s Gambit,
@@ -436,6 +493,21 @@ export default function App() {
                 >
                   เลือกบทเรียน
                 </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="tutorial-lobby-desc">
+                ฝึกแท็กติก — รุมฆาต ส้อม พิน และเดินเบี้ย หาตาที่ดีที่สุดในแต่ละตำแหน่ง
+              </p>
+              <div className="row">
+                <button
+                  className="primary"
+                  onClick={() => setShowPuzzlePicker(true)}
+                >
+                  เลือก Puzzle
+                </button>
+                <button onClick={pickRandomPuzzle}>สุ่ม Puzzle</button>
               </div>
             </>
           )}

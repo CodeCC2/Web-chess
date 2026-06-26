@@ -766,3 +766,59 @@ button.link {
   padding: 2px 8px;
   border-radius: 999px;
 }
+
+/* Puzzle mode */
+.puzzle-picker-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 16px 0 24px;
+}
+
+.puzzle-card .lesson-card-header {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.puzzle-theme-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #312e81;
+  color: #c7d2fe;
+}
+
+.puzzle-theme-badge.inline {
+  display: inline-block;
+  margin-bottom: 8px;
+  margin-right: 6px;
+}
+
+.puzzle-difficulty {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #374151;
+  color: #d1d5db;
+}
+
+.puzzle-difficulty.easy {
+  background: #14532d;
+  color: #86efac;
+}
+
+.puzzle-difficulty.medium {
+  background: #713f12;
+  color: #fde68a;
+}
+
+.puzzle-difficulty.hard {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+.puzzle-difficulty.inline {
+  display: inline-block;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+}

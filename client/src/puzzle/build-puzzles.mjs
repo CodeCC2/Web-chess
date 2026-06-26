@@ -1,0 +1,254 @@
+/**
+ * Puzzle definitions — run: node client/src/puzzle/build-puzzles.mjs
+ */
+import { Chess } from "chess.js";
+import { writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** @type {Array<object>} */
+const PUZZLES = [
+  {
+    id: "mate-1-rook",
+    title: "รุมฆาตด้วยเรือ",
+    theme: "mate",
+    themeLabel: "รุมฆาต",
+    difficulty: "easy",
+    icon: "♜",
+    fen: "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
+    prompt: "ขาวเดิน — หารุมฆาตในตาเดียว",
+    hint: "เรือควบคุมแถวที่ 8",
+    solution: [{ from: "a1", to: "a8" }],
+  },
+  {
+    id: "mate-1-queen",
+    title: "รุมฆาตด้วยควีน",
+    theme: "mate",
+    themeLabel: "รุมฆาต",
+    difficulty: "easy",
+    icon: "♕",
+    fen: "6k1/8/5pp1/7Q/8/8/6PP/6K1 w - - 0 1",
+    prompt: "ขาวเดิน — หาควีนรุมฆาต",
+    hint: "ควีนโจมตี h7",
+    solution: [{ from: "h5", to: "h7" }],
+  },
+  {
+    id: "mate-1-bishop",
+    title: "รุมฆาตด้วยบิชอป",
+    theme: "mate",
+    themeLabel: "รุมฆาต",
+    difficulty: "easy",
+    icon: "♗",
+    fen: "6k1/5ppp/8/8/8/3B4/6PP/6K1 w - - 0 1",
+    prompt: "ขาวเดิน — บิชอปรุมฆาต",
+    hint: "เส้นทแยงไป h7",
+    solution: [{ from: "d3", to: "h7" }],
+  },
+  {
+    id: "mate-1-smothered",
+    title: "รุมฆาตแบบสมัเธอร์",
+    theme: "mate",
+    themeLabel: "รุมฆาต",
+    difficulty: "medium",
+    icon: "♘",
+    fen: "6rk/5ppp/8/6N1/8/8/6PP/6K1 w - - 0 1",
+    prompt: "ขาวเดิน — ม้ารุมฆาตคิงที่ถูกล้อม",
+    hint: "ม้าไป f7",
+    solution: [{ from: "g5", to: "f7" }],
+  },
+  {
+    id: "mate-2-rook",
+    title: "รุมฆาต 2 ตา",
+    theme: "mate",
+    themeLabel: "รุมฆาต",
+    difficulty: "medium",
+    icon: "♜",
+    fen: "1k6/1pp5/8/8/8/8/1PP5/2K2R2 w - - 0 1",
+    prompt: "ขาวเดิน — รุมฆาตใน 2 ตา",
+    hint: "เรือเช็คก่อน บังคับคิง",
+    solution: [
+      { from: "f1", to: "f8" },
+      { from: "b8", to: "a7" },
+      { from: "f8", to: "c8" },
+    ],
+  },
+  {
+    id: "fork-knight",
+    title: "ส้อมม้า",
+    theme: "fork",
+    themeLabel: "ส้อม",
+    difficulty: "easy",
+    icon: "♞",
+    fen: "1k6/r7/8/1N6/8/8/6PP/6K1 w - - 0 1",
+    prompt: "ขาวเดิน — ม้าส้อมคิงกับเรือ",
+    hint: "ม้าไป c7",
+    solution: [{ from: "b5", to: "c7" }],
+  },
+  {
+    id: "fork-queen",
+    title: "ส้อมควีน",
+    theme: "fork",
+    themeLabel: "ส้อม",
+    difficulty: "medium",
+    icon: "♕",
+    fen: "4r1k1/5ppp/8/8/3Q4/8/5PPP/5RK1 w - - 0 1",
+    prompt: "ขาวเดิน — ควีนโจมตีคิงและเรือพร้อมกัน",
+    hint: "ควีนไป d5",
+    solution: [{ from: "d4", to: "d5" }],
+  },
+  {
+    id: "rook-e-file",
+    title: "เรือรุกคอลัมน์ e",
+    theme: "mate",
+    themeLabel: "รุมฆาต",
+    difficulty: "medium",
+    icon: "♜",
+    fen: "4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1",
+    prompt: "ขาวเดิน — ใช้เรือบนเส้น e",
+    hint: "เรือไป e8",
+    solution: [{ from: "e1", to: "e8" }],
+  },
+  {
+    id: "promotion-win",
+    title: "เดินเบี้ยขึ้นชนะ",
+    theme: "promotion",
+    themeLabel: "เดินเบี้ย",
+    difficulty: "medium",
+    icon: "♙",
+    fen: "8/4P3/8/8/8/8/8/4K2k w - - 0 1",
+    prompt: "ขาวเดิน — เดินเบี้ยขึ้นแล้วชนะ",
+    hint: "เบี้ยขึ้นควีน",
+    solution: [{ from: "e7", to: "e8", promotion: "q" }],
+  },
+  {
+    id: "mate-1-queen-d8",
+    title: "ควีนรุมฆาต d8",
+    theme: "mate",
+    themeLabel: "รุมฆาต",
+    difficulty: "easy",
+    icon: "♕",
+    fen: "6k1/5ppp/8/8/8/8/5PPP/3Q2K1 w - - 0 1",
+    prompt: "ขาวเดิน — ควีนรุมฆาต",
+    hint: "ควีนไป d8",
+    solution: [{ from: "d1", to: "d8" }],
+  },
+  {
+    id: "scholar-mate-trap",
+    title: "Qxf7#",
+    theme: "mate",
+    themeLabel: "รุมฆาต",
+    difficulty: "easy",
+    icon: "🎯",
+    fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
+    prompt: "ขาวเดิน — ชนะทันที",
+    hint: "ควีนโจมตี f7",
+    solution: [{ from: "h5", to: "f7" }],
+  },
+  {
+    id: "remove-defender",
+    title: "ล่อควีนแล้วรุมฆาต",
+    theme: "tactic",
+    themeLabel: "แท็กติก",
+    difficulty: "hard",
+    icon: "💥",
+    fen: "6k1/5ppp/8/8/8/6Q1/5PPP/4R1K1 w - - 0 1",
+    prompt: "ขาวเดิน — รุมฆาตใน 2 ตา",
+    hint: "ควีนเช็ค บังคับคิง",
+    solution: [
+      { from: "g3", to: "g7" },
+      { from: "g8", to: "g7" },
+      { from: "e1", to: "e8" },
+    ],
+  },
+  {
+    id: "knight-fork-endgame",
+    title: "ส้อมม้าเอนด์เกม",
+    theme: "fork",
+    themeLabel: "ส้อม",
+    difficulty: "hard",
+    icon: "♞",
+    fen: "4k3/8/8/4r3/8/5N2/8/4K2R w - - 0 1",
+    prompt: "ขาวเดิน — ม้าส้อมคิงกับเรือ",
+    hint: "ม้าไป e5",
+    solution: [{ from: "f3", to: "e5" }],
+  },
+];
+
+function validatePuzzle(puzzle) {
+  const game = new Chess(puzzle.fen);
+  const startTurn = game.turn();
+
+  for (let i = 0; i < puzzle.solution.length; i++) {
+    const expectedTurn =
+      i % 2 === 0 ? startTurn : startTurn === "w" ? "b" : "w";
+    if (game.turn() !== expectedTurn) {
+      throw new Error(
+        `${puzzle.id}: wrong side to move at ply ${i} (expected ${expectedTurn})`
+      );
+    }
+
+    const step = puzzle.solution[i];
+    const opts = { from: step.from, to: step.to };
+    if (step.promotion) opts.promotion = step.promotion;
+
+    const res = game.move(opts);
+    if (!res) {
+      throw new Error(
+        `${puzzle.id}: illegal move ${step.from}-${step.to} at ply ${i}`
+      );
+    }
+  }
+}
+
+for (const puzzle of PUZZLES) {
+  validatePuzzle(puzzle);
+}
+
+const out = `/**
+ * Tactical puzzles — generated by build-puzzles.mjs (do not edit by hand)
+ */
+
+export const puzzles = ${JSON.stringify(PUZZLES, null, 2)};
+
+const STORAGE_KEY = "chess_puzzles_completed";
+
+export function getCompletedPuzzles() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function markPuzzleComplete(puzzleId) {
+  const done = getCompletedPuzzles();
+  if (!done.includes(puzzleId)) {
+    done.push(puzzleId);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(done));
+  }
+}
+
+export function isPuzzleComplete(puzzleId) {
+  return getCompletedPuzzles().includes(puzzleId);
+}
+
+export const THEME_LABELS = {
+  mate: "รุมฆาต",
+  fork: "ส้อม",
+  pin: "พิน / เสียบ",
+  tactic: "แท็กติก",
+  sacrifice: "เสียสละ",
+  promotion: "เดินเบี้ย",
+};
+
+export const DIFFICULTY_LABELS = {
+  easy: "ง่าย",
+  medium: "ปานกลาง",
+  hard: "ยาก",
+};
+`;
+
+writeFileSync(path.join(__dirname, "puzzles.js"), out, "utf8");
+console.log(`Wrote ${PUZZLES.length} puzzles to puzzles.js`);

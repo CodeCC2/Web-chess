@@ -19,6 +19,8 @@ Three ways to play:
   WebSockets. Optional **blitz clocks** (5+0 or 3+2).
 - **สอนเล่น (Tutorial)** — guided opening lessons in Thai with main lines and
   sidelines.
+- **Puzzle** — tactical puzzles (mates, forks, pins, promotion) with hints and
+  progress tracking.
 
 ## Tech stack
 
@@ -80,6 +82,7 @@ web service** — no separate frontend host needed.
   browsers, pick a time control (unlimited, 5+0, or 3+2), then **Join room**.
   If your opponent leaves or disconnects, you are awarded the win automatically.
 - **Tutorial**: click **สอนเล่น** and pick an opening lesson.
+- **Puzzle**: click **Puzzle**, pick a tactical puzzle or use **สุ่ม Puzzle**.
 - Click a piece to see its legal moves (highlighted), then click a destination.
   Drag-and-drop also works.
 - Pawn promotion opens a picker (queen, rook, bishop, or knight).
