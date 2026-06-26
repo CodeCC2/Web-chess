@@ -3,6 +3,7 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { socket } from "./socket.js";
 import LocalGame from "./LocalGame.jsx";
+import MoveList from "./MoveList.jsx";
 import "./App.css";
 
 function randomRoomId() {
@@ -426,14 +427,7 @@ export default function App() {
             )}
           </div>
 
-          <div className="panel-section moves">
-            <h3>Moves</h3>
-            <ol>
-              {(state?.history || []).map((m, i) => (
-                <li key={i}>{m}</li>
-              ))}
-            </ol>
-          </div>
+          <MoveList history={state?.history || []} />
 
           {notice && <p className="notice">{notice}</p>}
         </aside>

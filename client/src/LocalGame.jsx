@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { getBotMove } from "./bot.js";
+import MoveList from "./MoveList.jsx";
 
 const DIFFICULTY_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
@@ -224,14 +225,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
             <button onClick={onExit}>Back to menu</button>
           </div>
 
-          <div className="panel-section moves">
-            <h3>Moves</h3>
-            <ol>
-              {info.history.map((m, i) => (
-                <li key={i}>{m}</li>
-              ))}
-            </ol>
-          </div>
+          <MoveList history={info.history} />
         </aside>
       </div>
     </div>
