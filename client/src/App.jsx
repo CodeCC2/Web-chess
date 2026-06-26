@@ -7,6 +7,8 @@ import MoveList from "./MoveList.jsx";
 import LessonPicker from "./tutorial/LessonPicker.jsx";
 import TutorialGame from "./tutorial/TutorialGame.jsx";
 import { lessons } from "./tutorial/lessons.js";
+import PromotionPicker from "./PromotionPicker.jsx";
+import { isLegalMove, needsPromotion } from "./promotionUtils.js";
 import "./App.css";
 
 function randomRoomId() {
@@ -23,6 +25,7 @@ export default function App() {
   const [connected, setConnected] = useState(socket.connected);
   const [moveFrom, setMoveFrom] = useState(null);
   const [optionSquares, setOptionSquares] = useState({});
+  const [pendingPromotion, setPendingPromotion] = useState(null);
 
   // Lobby mode + single-player (vs computer) config.
   const [lobbyMode, setLobbyMode] = useState("online"); // "online" | "bot" | "tutorial"
@@ -55,6 +58,7 @@ export default function App() {
       setState(s);
       setMoveFrom(null);
       setOptionSquares({});
+      setPendingPromotion(null);
     }
     function onOpponentJoined() {
       setNotice("Opponent joined the game.");
@@ -113,39 +117,50 @@ export default function App() {
     [name, roomInput]
   );
 
-  const attemptMove = useCallback(
-    (sourceSquare, targetSquare) => {
-      if (!state || !roomId) return false;
-      if (color !== state.turn) return false;
-
-      const probe = new Chess(state.fen);
-      const piece = probe.get(sourceSquare);
-      const isPromotion =
-        piece &&
-        piece.type === "p" &&
-        (targetSquare[1] === "8" || targetSquare[1] === "1");
-
-      let legal = null;
-      try {
-        legal = probe.move({
-          from: sourceSquare,
-          to: targetSquare,
-          promotion: isPromotion ? "q" : undefined,
-        });
-      } catch {
-        legal = null;
-      }
-      if (!legal) return false;
-
+  const sendMove = useCallback(
+    (sourceSquare, targetSquare, promotion) => {
       socket.emit("move", {
         roomId,
         from: sourceSquare,
         to: targetSquare,
-        promotion: isPromotion ? "q" : undefined,
+        promotion,
       });
+    },
+    [roomId]
+  );
+
+  const attemptMove = useCallback(
+    (sourceSquare, targetSquare, promotion) => {
+      if (!state || !roomId) return false;
+      if (color !== state.turn) return false;
+
+      const probe = new Chess(state.fen);
+
+      if (needsPromotion(probe, sourceSquare, targetSquare) && !promotion) {
+        setPendingPromotion({ from: sourceSquare, to: targetSquare });
+        return false;
+      }
+
+      if (!isLegalMove(probe, sourceSquare, targetSquare, promotion)) {
+        return false;
+      }
+
+      sendMove(sourceSquare, targetSquare, promotion);
       return true;
     },
-    [state, roomId, color]
+    [state, roomId, color, sendMove]
+  );
+
+  const handlePromotionSelect = useCallback(
+    (piece) => {
+      if (!pendingPromotion) return;
+      const { from, to } = pendingPromotion;
+      setPendingPromotion(null);
+      setMoveFrom(null);
+      setOptionSquares({});
+      sendMove(from, to, piece);
+    },
+    [pendingPromotion, sendMove]
   );
 
   const onPieceDrop = useCallback(
@@ -199,6 +214,14 @@ export default function App() {
       }
 
       if (square === moveFrom) {
+        setMoveFrom(null);
+        setOptionSquares({});
+        return;
+      }
+
+      const probe = new Chess(state.fen);
+      if (needsPromotion(probe, moveFrom, square)) {
+        setPendingPromotion({ from: moveFrom, to: square });
         setMoveFrom(null);
         setOptionSquares({});
         return;
@@ -264,6 +287,7 @@ export default function App() {
     setNotice("");
     setMoveFrom(null);
     setOptionSquares({});
+    setPendingPromotion(null);
     setBotConfig(null);
     setTutorialLesson(null);
     setShowLessonPicker(false);
@@ -452,9 +476,13 @@ export default function App() {
             position={state?.fen}
             onPieceDrop={onPieceDrop}
             onSquareClick={onSquareClick}
+            onPromotionCheck={() => false}
             boardOrientation={color === "black" ? "black" : "white"}
             arePiecesDraggable={
-              color !== "spectator" && !gameOver && state?.turn === color
+              color !== "spectator" &&
+              !gameOver &&
+              state?.turn === color &&
+              !pendingPromotion
             }
             customSquareStyles={optionSquares}
             boardWidth={Math.min(480, window.innerWidth - 32)}
@@ -463,6 +491,13 @@ export default function App() {
               boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
             }}
           />
+          {pendingPromotion && color !== "spectator" && (
+            <PromotionPicker
+              color={color === "white" ? "w" : "b"}
+              onSelect={handlePromotionSelect}
+              onCancel={() => setPendingPromotion(null)}
+            />
+          )}
         </div>
 
         <aside className="panel">

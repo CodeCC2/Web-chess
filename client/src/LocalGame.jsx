@@ -3,6 +3,8 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { getBotMove } from "./bot.js";
 import MoveList from "./MoveList.jsx";
+import PromotionPicker from "./PromotionPicker.jsx";
+import { isLegalMove, needsPromotion } from "./promotionUtils.js";
 
 const DIFFICULTY_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
@@ -38,6 +40,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   const [thinking, setThinking] = useState(false);
   const [moveFrom, setMoveFrom] = useState(null);
   const [optionSquares, setOptionSquares] = useState({});
+  const [pendingPromotion, setPendingPromotion] = useState(null);
 
   const playerChar = playerColor === "white" ? "w" : "b";
   const botColor = playerColor === "white" ? "b" : "w";
@@ -67,7 +70,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
         res = game.move({
           from: move.from,
           to: move.to,
-          promotion: move.promotion || "q",
+          promotion: move.promotion,
         });
       } catch {
         res = null;
@@ -110,13 +113,32 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   }, []);
 
   const attemptMove = useCallback(
-    (from, to) => {
+    (from, to, promotion) => {
       const game = gameRef.current;
       if (game.isGameOver() || thinking) return false;
       if (game.turn() !== playerChar) return false;
-      return commitMove({ from, to });
+
+      if (needsPromotion(game, from, to) && !promotion) {
+        setPendingPromotion({ from, to });
+        return false;
+      }
+
+      if (!isLegalMove(game, from, to, promotion)) return false;
+      return commitMove({ from, to, promotion });
     },
     [commitMove, playerChar, thinking]
+  );
+
+  const handlePromotionSelect = useCallback(
+    (piece) => {
+      if (!pendingPromotion) return;
+      const { from, to } = pendingPromotion;
+      setPendingPromotion(null);
+      setMoveFrom(null);
+      setOptionSquares({});
+      commitMove({ from, to, promotion: piece });
+    },
+    [pendingPromotion, commitMove]
   );
 
   const onPieceDrop = useCallback(
@@ -145,6 +167,14 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
         setOptionSquares({});
         return;
       }
+
+      if (needsPromotion(game, moveFrom, square)) {
+        setPendingPromotion({ from: moveFrom, to: square });
+        setMoveFrom(null);
+        setOptionSquares({});
+        return;
+      }
+
       if (attemptMove(moveFrom, square)) {
         setMoveFrom(null);
         setOptionSquares({});
@@ -165,6 +195,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
     gameRef.current = new Chess();
     setMoveFrom(null);
     setOptionSquares({});
+    setPendingPromotion(null);
     setThinking(false);
     sync();
   }, [sync]);
@@ -192,8 +223,9 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
             position={fen}
             onPieceDrop={onPieceDrop}
             onSquareClick={onSquareClick}
+            onPromotionCheck={() => false}
             boardOrientation={playerColor === "black" ? "black" : "white"}
-            arePiecesDraggable={isPlayerTurn && !thinking}
+            arePiecesDraggable={isPlayerTurn && !thinking && !pendingPromotion}
             customSquareStyles={optionSquares}
             boardWidth={Math.min(480, window.innerWidth - 32)}
             customBoardStyle={{
@@ -201,6 +233,13 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
               boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
             }}
           />
+          {pendingPromotion && (
+            <PromotionPicker
+              color={playerChar}
+              onSelect={handlePromotionSelect}
+              onCancel={() => setPendingPromotion(null)}
+            />
+          )}
         </div>
 
         <aside className="panel">
