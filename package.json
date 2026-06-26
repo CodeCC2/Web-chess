@@ -15,7 +15,8 @@
     "build": "npm --workspace client run build",
     "start": "npm --workspace server run start",
     "serve": "npm run build && npm run start",
-    "lint": "npm --workspace client run lint"
+    "lint": "npm --workspace client run lint",
+    "ship": "bash scripts/ship.sh"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
