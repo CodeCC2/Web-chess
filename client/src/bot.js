@@ -94,17 +94,21 @@ function evaluateBoard(game) {
   return score;
 }
 
-function scoreMove(m) {
+function scoreMove(m, strong = false) {
   let s = 0;
   if (m.captured) s += 10 * PIECE_VALUES[m.captured] - PIECE_VALUES[m.piece];
   if (m.promotion) s += PIECE_VALUES[m.promotion];
+  if (strong) {
+    if (m.san.includes("#")) s += MATE;
+    else if (m.san.includes("+")) s += 80;
+  }
   return s;
 }
 
-function orderedMoves(game) {
+function orderedMoves(game, strong = false) {
   return game
     .moves({ verbose: true })
-    .sort((a, b) => scoreMove(b) - scoreMove(a));
+    .sort((a, b) => scoreMove(b, strong) - scoreMove(a, strong));
 }
 
 // Negamax with alpha-beta pruning. Returns score from the side-to-move's view.
@@ -129,12 +133,38 @@ function randomChoice(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-const DEPTHS = { medium: 2, hard: 3 };
+const DEPTHS = {
+  medium: 3,
+  hard: 3,
+  expert: 4,
+  master: 4,
+};
+
+/** Display names for lobby and in-game UI. */
+export const DIFFICULTY_LABELS = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
+  expert: "Expert",
+  master: "Master",
+};
+
+/** Bot "thinking" delay before moving (ms). */
+export const THINK_MS = {
+  easy: 300,
+  medium: 400,
+  hard: 700,
+  expert: 1000,
+  master: 1400,
+};
+
+const MISTAKE_CHANCE = { medium: 0.1, hard: 0.03 };
+const STRONG_ORDER = { expert: true, master: true };
 
 /**
  * Pick the bot's move for a position.
  * @param {string} fen current position
- * @param {"easy"|"medium"|"hard"} difficulty
+ * @param {"easy"|"medium"|"hard"|"expert"|"master"} difficulty
  * @returns {{from:string,to:string,promotion:string}|null}
  */
 export function getBotMove(fen, difficulty = "medium") {
@@ -144,11 +174,11 @@ export function getBotMove(fen, difficulty = "medium") {
 
   const toMove = (m) => ({ from: m.from, to: m.to, promotion: m.promotion || "q" });
 
-  // Easy: random legal moves so beginners can win comfortably.
   if (difficulty === "easy") return toMove(randomChoice(legal));
 
-  const depth = DEPTHS[difficulty] ?? 2;
-  const ordered = orderedMoves(game);
+  const depth = DEPTHS[difficulty] ?? 3;
+  const strong = STRONG_ORDER[difficulty] ?? false;
+  const ordered = orderedMoves(game, strong);
   let best = -Infinity;
   let bestMoves = [];
   let alpha = -Infinity;
@@ -167,9 +197,11 @@ export function getBotMove(fen, difficulty = "medium") {
     if (best > alpha) alpha = best;
   }
 
-  // Medium occasionally plays a random move so it stays beatable.
-  if (difficulty === "medium" && Math.random() < 0.2) {
+  const mistakeRate = MISTAKE_CHANCE[difficulty] ?? 0;
+  if (mistakeRate > 0 && Math.random() < mistakeRate) {
     return toMove(randomChoice(legal));
   }
+
+  if (difficulty === "master") return toMove(bestMoves[0]);
   return toMove(randomChoice(bestMoves));
 }

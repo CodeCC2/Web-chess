@@ -7,6 +7,7 @@ import MoveList from "./MoveList.jsx";
 import LessonPicker from "./tutorial/LessonPicker.jsx";
 import TutorialGame from "./tutorial/TutorialGame.jsx";
 import { lessons } from "./tutorial/lessons.js";
+import { DIFFICULTY_LABELS } from "./bot.js";
 import PromotionPicker from "./PromotionPicker.jsx";
 import { isLegalMove, needsPromotion } from "./promotionUtils.js";
 import "./App.css";
@@ -391,14 +392,14 @@ export default function App() {
             <>
               <label>
                 Difficulty
-                <div className="seg">
-                  {["easy", "medium", "hard"].map((d) => (
+                <div className="seg seg-wrap">
+                  {Object.keys(DIFFICULTY_LABELS).map((d) => (
                     <button
                       key={d}
                       className={difficulty === d ? "seg-btn active" : "seg-btn"}
                       onClick={() => setDifficulty(d)}
                     >
-                      {d[0].toUpperCase() + d.slice(1)}
+                      {DIFFICULTY_LABELS[d]}
                     </button>
                   ))}
                 </div>

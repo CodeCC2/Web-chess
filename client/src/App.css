@@ -70,6 +70,12 @@ button:hover {
   filter: brightness(1.15);
 }
 
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}
+
 button.primary {
   background: #6366f1;
   color: white;
@@ -114,6 +120,15 @@ button.link {
 .seg {
   display: flex;
   gap: 8px;
+}
+
+.seg-wrap {
+  flex-wrap: wrap;
+}
+
+.seg-wrap .seg-btn {
+  flex: 1 1 calc(33% - 8px);
+  min-width: 4.5rem;
 }
 
 .seg-btn {

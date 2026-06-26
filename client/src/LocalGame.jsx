@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
-import { getBotMove } from "./bot.js";
+import { getBotMove, DIFFICULTY_LABELS, THINK_MS } from "./bot.js";
 import MoveList from "./MoveList.jsx";
 import PromotionPicker from "./PromotionPicker.jsx";
 import { isLegalMove, needsPromotion } from "./promotionUtils.js";
 
-const DIFFICULTY_LABEL = { easy: "Easy", medium: "Medium", hard: "Hard" };
+const DIFFICULTY_LABEL = DIFFICULTY_LABELS;
 
 function computeStatus(game) {
   let status = "playing";
@@ -41,6 +41,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   const [moveFrom, setMoveFrom] = useState(null);
   const [optionSquares, setOptionSquares] = useState({});
   const [pendingPromotion, setPendingPromotion] = useState(null);
+  const botMoveGenRef = useRef(0);
 
   const playerChar = playerColor === "white" ? "w" : "b";
   const botColor = playerColor === "white" ? "b" : "w";
@@ -86,14 +87,37 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   useEffect(() => {
     const game = gameRef.current;
     if (game.isGameOver() || game.turn() !== botColor) return;
+
+    const gen = ++botMoveGenRef.current;
     setThinking(true);
+    const delay = THINK_MS[difficulty] ?? 450;
     const timer = setTimeout(() => {
+      if (gen !== botMoveGenRef.current) return;
       const mv = getBotMove(game.fen(), difficulty);
-      if (mv) commitMove(mv);
-      setThinking(false);
-    }, 450);
+      if (gen === botMoveGenRef.current && mv) commitMove(mv);
+      if (gen === botMoveGenRef.current) setThinking(false);
+    }, delay);
+
     return () => clearTimeout(timer);
   }, [fen, botColor, difficulty, commitMove]);
+
+  const canUndo =
+    info.history.length > 0 && !thinking && !pendingPromotion && !gameOver;
+
+  const undoMove = useCallback(() => {
+    if (!canUndo) return;
+    botMoveGenRef.current += 1;
+    setThinking(false);
+
+    const game = gameRef.current;
+    const plies = Math.min(2, game.history().length);
+    for (let i = 0; i < plies; i++) game.undo();
+
+    setMoveFrom(null);
+    setOptionSquares({});
+    setPendingPromotion(null);
+    sync();
+  }, [canUndo, sync]);
 
   const highlightLegalMoves = useCallback((square) => {
     const game = gameRef.current;
@@ -265,6 +289,9 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
           <div className="panel-section actions">
             <button className="primary" onClick={newGame}>
               New game
+            </button>
+            <button type="button" onClick={undoMove} disabled={!canUndo}>
+              Undo
             </button>
             <button onClick={onExit}>Back to menu</button>
           </div>
