@@ -2,6 +2,11 @@
 
 Play chess online — a real-time, two-player multiplayer chess web game.
 
+**▶️ Play now: [online-chess-pcl8.onrender.com](https://online-chess-pcl8.onrender.com)**
+
+> Hosted on Render's free tier — if the app has been idle it may take ~30–60s to
+> wake up on the first visit.
+
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/CodeCC2/Web-chess)
 
 Two ways to play:
