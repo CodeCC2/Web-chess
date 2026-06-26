@@ -1,10 +1,8 @@
 import { Chess } from "chess.js";
 
-// Material values (centipawns).
 const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
-const MATE = 1000000;
+const MATE = 1_000_000;
 
-// Piece-square tables, white's perspective, row 0 = rank 8 (matches Chess.board()).
 const PST = {
   p: [
     [0, 0, 0, 0, 0, 0, 0, 0],
@@ -68,18 +66,41 @@ const PST = {
   ],
 };
 
+/** 4 levels — expert uses timed iterative deepening (actually strong). */
+export const DIFFICULTY_LABELS = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
+  expert: "Expert",
+};
+
+/** Minimum UI delay before bot moves (expert search time is separate). */
+export const THINK_MS = {
+  easy: 250,
+  medium: 350,
+  hard: 500,
+  expert: 0,
+};
+
+const CONFIG = {
+  medium: { depth: 2, mistake: 0.12 },
+  hard: { depth: 3, mistake: 0 },
+  expert: { timeMs: 3000, maxDepth: 8 },
+};
+
+let searchDeadline = 0;
+
 function pstValue(piece, row, col) {
   const table = PST[piece.type];
   if (!table) return 0;
-  // White reads the table directly; Black reads the vertically mirrored row.
   return piece.color === "w" ? table[row][col] : table[7 - row][col];
 }
 
-// Static evaluation from White's perspective (positive = White is better).
-function evaluateBoard(game) {
+function evaluateBoard(game, extended = false) {
   if (game.isCheckmate()) return game.turn() === "w" ? -MATE : MATE;
-  if (game.isDraw() || game.isStalemate() || game.isInsufficientMaterial())
+  if (game.isDraw() || game.isStalemate() || game.isInsufficientMaterial()) {
     return 0;
+  }
 
   let score = 0;
   const board = game.board();
@@ -91,36 +112,50 @@ function evaluateBoard(game) {
       score += piece.color === "w" ? value : -value;
     }
   }
+
+  if (extended) {
+    const mobility = game.moves().length;
+    score += (game.turn() === "w" ? mobility : -mobility) * 5;
+    if (game.isCheck()) {
+      score += game.turn() === "w" ? -25 : 25;
+    }
+  }
+
   return score;
 }
 
-function scoreMove(m, strong = false) {
+function scoreMove(m) {
   let s = 0;
   if (m.captured) s += 10 * PIECE_VALUES[m.captured] - PIECE_VALUES[m.piece];
   if (m.promotion) s += PIECE_VALUES[m.promotion];
-  if (strong) {
-    if (m.san.includes("#")) s += MATE;
-    else if (m.san.includes("+")) s += 80;
-  }
+  if (m.san.includes("#")) s += MATE;
+  else if (m.san.includes("+")) s += 90;
   return s;
 }
 
-function orderedMoves(game, strong = false) {
+function orderedMoves(game) {
   return game
     .moves({ verbose: true })
-    .sort((a, b) => scoreMove(b, strong) - scoreMove(a, strong));
+    .sort((a, b) => scoreMove(b) - scoreMove(a));
 }
 
-// Negamax with alpha-beta pruning. Returns score from the side-to-move's view.
-function search(game, depth, alpha, beta) {
+function timedOut() {
+  return Date.now() >= searchDeadline;
+}
+
+function search(game, depth, alpha, beta, extended) {
+  if (timedOut()) return evaluateBoard(game, extended);
+
   if (depth === 0 || game.isGameOver()) {
     const sign = game.turn() === "w" ? 1 : -1;
-    return sign * evaluateBoard(game);
+    return sign * evaluateBoard(game, extended);
   }
+
   let best = -Infinity;
   for (const m of orderedMoves(game)) {
+    if (timedOut()) break;
     game.move({ from: m.from, to: m.to, promotion: m.promotion });
-    const score = -search(game, depth - 1, -beta, -alpha);
+    const score = -search(game, depth - 1, -beta, -alpha, extended);
     game.undo();
     if (score > best) best = score;
     if (best > alpha) alpha = best;
@@ -129,64 +164,17 @@ function search(game, depth, alpha, beta) {
   return best;
 }
 
-function randomChoice(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-const DEPTHS = {
-  medium: 3,
-  hard: 3,
-  expert: 4,
-  master: 4,
-};
-
-/** Display names for lobby and in-game UI. */
-export const DIFFICULTY_LABELS = {
-  easy: "Easy",
-  medium: "Medium",
-  hard: "Hard",
-  expert: "Expert",
-  master: "Master",
-};
-
-/** Bot "thinking" delay before moving (ms). */
-export const THINK_MS = {
-  easy: 300,
-  medium: 400,
-  hard: 700,
-  expert: 1000,
-  master: 1400,
-};
-
-const MISTAKE_CHANCE = { medium: 0.1, hard: 0.03 };
-const STRONG_ORDER = { expert: true, master: true };
-
-/**
- * Pick the bot's move for a position.
- * @param {string} fen current position
- * @param {"easy"|"medium"|"hard"|"expert"|"master"} difficulty
- * @returns {{from:string,to:string,promotion:string}|null}
- */
-export function getBotMove(fen, difficulty = "medium") {
-  const game = new Chess(fen);
-  const legal = game.moves({ verbose: true });
-  if (legal.length === 0) return null;
-
-  const toMove = (m) => ({ from: m.from, to: m.to, promotion: m.promotion || "q" });
-
-  if (difficulty === "easy") return toMove(randomChoice(legal));
-
-  const depth = DEPTHS[difficulty] ?? 3;
-  const strong = STRONG_ORDER[difficulty] ?? false;
-  const ordered = orderedMoves(game, strong);
+function searchAtDepth(game, depth, extended) {
+  const moves = orderedMoves(game);
   let best = -Infinity;
-  let bestMoves = [];
+  let bestMoves = [moves[0]];
   let alpha = -Infinity;
   const beta = Infinity;
 
-  for (const m of ordered) {
+  for (const m of moves) {
+    if (timedOut()) break;
     game.move({ from: m.from, to: m.to, promotion: m.promotion });
-    const score = -search(game, depth - 1, -beta, -alpha);
+    const score = -search(game, depth - 1, -beta, -alpha, extended);
     game.undo();
     if (score > best) {
       best = score;
@@ -197,11 +185,59 @@ export function getBotMove(fen, difficulty = "medium") {
     if (best > alpha) alpha = best;
   }
 
-  const mistakeRate = MISTAKE_CHANCE[difficulty] ?? 0;
-  if (mistakeRate > 0 && Math.random() < mistakeRate) {
+  return { move: bestMoves[0], score: best, completed: !timedOut() };
+}
+
+function randomChoice(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function toMove(m) {
+  return { from: m.from, to: m.to, promotion: m.promotion || "q" };
+}
+
+function getFixedDepthMove(game, depth, mistake) {
+  const legal = game.moves({ verbose: true });
+  if (mistake > 0 && Math.random() < mistake) {
     return toMove(randomChoice(legal));
   }
 
-  if (difficulty === "master") return toMove(bestMoves[0]);
-  return toMove(randomChoice(bestMoves));
+  const { move } = searchAtDepth(game, depth, false);
+  return toMove(move);
+}
+
+function getExpertMove(game) {
+  const { timeMs, maxDepth } = CONFIG.expert;
+  searchDeadline = Date.now() + timeMs;
+
+  const moves = orderedMoves(game);
+  let bestMove = moves[0];
+
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    if (timedOut()) break;
+    const { move, score, completed } = searchAtDepth(game, depth, true);
+    if (move && completed) {
+      bestMove = move;
+      if (Math.abs(score) > MATE - 1000) break;
+    }
+  }
+
+  return toMove(bestMove);
+}
+
+/**
+ * @param {string} fen
+ * @param {"easy"|"medium"|"hard"|"expert"} difficulty
+ */
+export function getBotMove(fen, difficulty = "medium") {
+  const game = new Chess(fen);
+  const legal = game.moves({ verbose: true });
+  if (legal.length === 0) return null;
+
+  if (difficulty === "easy") return toMove(randomChoice(legal));
+
+  if (difficulty === "expert") return getExpertMove(game);
+
+  const { depth, mistake } = CONFIG[difficulty] ?? CONFIG.hard;
+  return getFixedDepthMove(game, depth, mistake);
 }

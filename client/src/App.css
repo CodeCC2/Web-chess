@@ -127,7 +127,7 @@ button.link {
 }
 
 .seg-wrap .seg-btn {
-  flex: 1 1 calc(33% - 8px);
+  flex: 1 1 calc(50% - 8px);
   min-width: 4.5rem;
 }
 
