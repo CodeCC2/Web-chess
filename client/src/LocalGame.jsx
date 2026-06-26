@@ -35,6 +35,8 @@ function computeStatus(game) {
 
 export default function LocalGame({ difficulty, playerColor, onExit }) {
   const gameRef = useRef(new Chess());
+  const redoStackRef = useRef([]);
+  const [redoCount, setRedoCount] = useState(0);
   const [fen, setFen] = useState(gameRef.current.fen());
   const [info, setInfo] = useState(() => computeStatus(gameRef.current));
   const [thinking, setThinking] = useState(false);
@@ -74,6 +76,8 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
         res = null;
       }
       if (!res) return false;
+      redoStackRef.current = [];
+      setRedoCount(0);
       sync();
       return true;
     },
@@ -127,6 +131,8 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   const canUndo =
     info.history.length > 0 && !thinking && !pendingPromotion && !gameOver;
 
+  const canRedo = redoCount > 0 && !thinking && !pendingPromotion && !gameOver;
+
   const undoMove = useCallback(() => {
     if (!canUndo) return;
     botMoveGenRef.current += 1;
@@ -134,14 +140,59 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
 
     const game = gameRef.current;
     const plies = Math.min(2, game.history().length);
-    for (let i = 0; i < plies; i++) game.undo();
+    const toRestore = [];
+    for (let i = 0; i < plies; i++) {
+      const undone = game.undo();
+      if (!undone) break;
+      toRestore.unshift({
+        from: undone.from,
+        to: undone.to,
+        promotion: undone.promotion,
+      });
+    }
+    if (toRestore.length > 0) {
+      redoStackRef.current.push(toRestore);
+      setRedoCount(redoStackRef.current.length);
+    }
 
     resetBoardUi();
     sync();
   }, [canUndo, resetBoardUi, sync]);
 
+  const redoMove = useCallback(() => {
+    if (thinking || pendingPromotion || gameOver) return;
+    if (redoStackRef.current.length === 0) return;
+    botMoveGenRef.current += 1;
+    setThinking(false);
+
+    const moves = redoStackRef.current.pop();
+    if (!moves?.length) {
+      setRedoCount(redoStackRef.current.length);
+      return;
+    }
+
+    const game = gameRef.current;
+    for (const step of moves) {
+      const opts = { from: step.from, to: step.to };
+      if (step.promotion) opts.promotion = step.promotion;
+      if (!game.move(opts)) {
+        redoStackRef.current = [];
+        setRedoCount(0);
+        resetBoardUi();
+        sync();
+        return;
+      }
+    }
+
+    setRedoCount(redoStackRef.current.length);
+    resetBoardUi();
+    sync();
+  }, [thinking, pendingPromotion, gameOver, resetBoardUi, sync]);
+
   const newGame = useCallback(() => {
     gameRef.current = new Chess();
+    redoStackRef.current = [];
+    setRedoCount(0);
     resetBoardUi();
     setThinking(false);
     sync();
@@ -215,6 +266,9 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
             </button>
             <button type="button" onClick={undoMove} disabled={!canUndo}>
               Undo
+            </button>
+            <button type="button" onClick={redoMove} disabled={!canRedo}>
+              Redo
             </button>
             <button onClick={onExit}>Back to menu</button>
           </div>
