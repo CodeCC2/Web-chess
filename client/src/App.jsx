@@ -257,6 +257,18 @@ export default function App() {
     }
   }, [tutorialLesson]);
 
+  const goHome = useCallback(() => {
+    setRoomId(null);
+    setColor(null);
+    setState(null);
+    setNotice("");
+    setMoveFrom(null);
+    setOptionSquares({});
+    setBotConfig(null);
+    setTutorialLesson(null);
+    setShowLessonPicker(false);
+  }, []);
+
   if (tutorialLesson) {
     return (
       <TutorialGame
@@ -417,13 +429,18 @@ export default function App() {
     <div className="app game">
       <header className="game-header">
         <h1>♞ Online Chess</h1>
-        <div className="room-badge">
-          Room <strong>{roomId}</strong>
-          <button
-            className="link"
-            onClick={() => navigator.clipboard?.writeText(roomId)}
-          >
-            copy
+        <div className="game-header-right">
+          <div className="room-badge">
+            Room <strong>{roomId}</strong>
+            <button
+              className="link"
+              onClick={() => navigator.clipboard?.writeText(roomId)}
+            >
+              copy
+            </button>
+          </div>
+          <button type="button" className="home-btn" onClick={goHome}>
+            Home
           </button>
         </div>
       </header>
@@ -489,6 +506,9 @@ export default function App() {
                 Rematch
               </button>
             )}
+            <button type="button" onClick={goHome}>
+              Home
+            </button>
           </div>
 
           <MoveList history={state?.history || []} />

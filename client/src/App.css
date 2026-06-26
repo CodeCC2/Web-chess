@@ -149,6 +149,29 @@ button.link {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.game-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.home-btn {
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #e5e7eb;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.home-btn:hover {
+  border-color: #6366f1;
+  color: #c7d2fe;
 }
 
 .room-badge {

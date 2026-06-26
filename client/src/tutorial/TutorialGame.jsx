@@ -243,12 +243,17 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
     <div className="app game">
       <header className="game-header">
         <h1>♞ สอนเปิดเกม</h1>
-        <div className="room-badge">
-          {lesson.icon}{" "}
-          <strong>
-            {lesson.title}
-            {lesson.subtitle ? ` (${lesson.subtitle})` : ""}
-          </strong>
+        <div className="game-header-right">
+          <div className="room-badge">
+            {lesson.icon}{" "}
+            <strong>
+              {lesson.title}
+              {lesson.subtitle ? ` (${lesson.subtitle})` : ""}
+            </strong>
+          </div>
+          <button type="button" className="home-btn" onClick={onExit}>
+            Home
+          </button>
         </div>
       </header>
 

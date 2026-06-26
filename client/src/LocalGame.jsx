@@ -175,8 +175,13 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
     <div className="app game">
       <header className="game-header">
         <h1>♞ Online Chess</h1>
-        <div className="room-badge">
-          vs Computer · <strong>{DIFFICULTY_LABEL[difficulty]}</strong>
+        <div className="game-header-right">
+          <div className="room-badge">
+            vs Computer · <strong>{DIFFICULTY_LABEL[difficulty]}</strong>
+          </div>
+          <button type="button" className="home-btn" onClick={onExit}>
+            Home
+          </button>
         </div>
       </header>
 
