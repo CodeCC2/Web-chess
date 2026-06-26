@@ -12,6 +12,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {Array<object>} */
 const BASE_PUZZLES = [];
 
+function requiresMate(puzzle) {
+  if (puzzle.theme === "mate" || puzzle.theme === "sacrifice") return true;
+  if (puzzle.prompt?.includes("รุมฆาต")) return true;
+  if (puzzle.title?.includes("#")) return true;
+  return false;
+}
+
 function validatePuzzle(puzzle) {
   const game = new Chess(puzzle.fen);
   const startTurn = game.turn();
@@ -35,6 +42,10 @@ function validatePuzzle(puzzle) {
         `${puzzle.id}: illegal move ${step.from}-${step.to} at ply ${i}`
       );
     }
+  }
+
+  if (requiresMate(puzzle) && !game.isCheckmate()) {
+    throw new Error(`${puzzle.id}: solution does not end in checkmate`);
   }
 }
 
