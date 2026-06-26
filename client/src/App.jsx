@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { socket } from "./socket.js";
+import LocalGame from "./LocalGame.jsx";
 import "./App.css";
 
 function randomRoomId() {
@@ -18,6 +19,22 @@ export default function App() {
   const [connected, setConnected] = useState(socket.connected);
   const [moveFrom, setMoveFrom] = useState(null);
   const [optionSquares, setOptionSquares] = useState({});
+
+  // Lobby mode + single-player (vs computer) config.
+  const [lobbyMode, setLobbyMode] = useState("online"); // "online" | "bot"
+  const [difficulty, setDifficulty] = useState("medium");
+  const [botColorChoice, setBotColorChoice] = useState("white"); // white | black | random
+  const [botConfig, setBotConfig] = useState(null);
+
+  const startBotGame = useCallback(() => {
+    const playerColor =
+      botColorChoice === "random"
+        ? Math.random() < 0.5
+          ? "white"
+          : "black"
+        : botColorChoice;
+    setBotConfig({ difficulty, playerColor });
+  }, [botColorChoice, difficulty]);
 
   useEffect(() => {
     function onConnect() {
@@ -221,39 +238,108 @@ export default function App() {
     return null;
   }, [state, color]);
 
+  if (botConfig) {
+    return (
+      <LocalGame
+        difficulty={botConfig.difficulty}
+        playerColor={botConfig.playerColor}
+        onExit={() => setBotConfig(null)}
+      />
+    );
+  }
+
   if (!roomId) {
     return (
       <div className="app lobby">
         <h1>♞ Online Chess</h1>
-        <p className="subtitle">Real-time multiplayer chess. Share a room code to play.</p>
+        <p className="subtitle">
+          Play against the computer, or share a room code to play a friend.
+        </p>
         <div className="card">
-          <label>
-            Your name
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Anonymous"
-              maxLength={20}
-            />
-          </label>
-          <label>
-            Room code
-            <input
-              value={roomInput}
-              onChange={(e) => setRoomInput(e.target.value.toUpperCase())}
-              placeholder="e.g. AB12CD"
-              maxLength={8}
-            />
-          </label>
-          <div className="row">
-            <button className="primary" onClick={() => joinGame()}>
-              {roomInput ? "Join room" : "Create new game"}
+          <div className="mode-tabs">
+            <button
+              className={lobbyMode === "online" ? "tab active" : "tab"}
+              onClick={() => setLobbyMode("online")}
+            >
+              Play online
+            </button>
+            <button
+              className={lobbyMode === "bot" ? "tab active" : "tab"}
+              onClick={() => setLobbyMode("bot")}
+            >
+              vs Computer
             </button>
           </div>
-          {notice && <p className="notice">{notice}</p>}
-          <p className="status">
-            Server: {connected ? "🟢 connected" : "🔴 connecting..."}
-          </p>
+
+          {lobbyMode === "online" ? (
+            <>
+              <label>
+                Your name
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Anonymous"
+                  maxLength={20}
+                />
+              </label>
+              <label>
+                Room code
+                <input
+                  value={roomInput}
+                  onChange={(e) => setRoomInput(e.target.value.toUpperCase())}
+                  placeholder="e.g. AB12CD"
+                  maxLength={8}
+                />
+              </label>
+              <div className="row">
+                <button className="primary" onClick={() => joinGame()}>
+                  {roomInput ? "Join room" : "Create new game"}
+                </button>
+              </div>
+              {notice && <p className="notice">{notice}</p>}
+              <p className="status">
+                Server: {connected ? "🟢 connected" : "🔴 connecting..."}
+              </p>
+            </>
+          ) : (
+            <>
+              <label>
+                Difficulty
+                <div className="seg">
+                  {["easy", "medium", "hard"].map((d) => (
+                    <button
+                      key={d}
+                      className={difficulty === d ? "seg-btn active" : "seg-btn"}
+                      onClick={() => setDifficulty(d)}
+                    >
+                      {d[0].toUpperCase() + d.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </label>
+              <label>
+                Play as
+                <div className="seg">
+                  {["white", "black", "random"].map((c) => (
+                    <button
+                      key={c}
+                      className={
+                        botColorChoice === c ? "seg-btn active" : "seg-btn"
+                      }
+                      onClick={() => setBotColorChoice(c)}
+                    >
+                      {c[0].toUpperCase() + c.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </label>
+              <div className="row">
+                <button className="primary" onClick={startBotGame}>
+                  Start game
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );

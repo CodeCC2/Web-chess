@@ -92,6 +92,45 @@ button.link {
   gap: 10px;
 }
 
+.mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tab {
+  flex: 1;
+  background: #0b1120;
+  border: 1px solid #374151;
+  color: #9ca3af;
+}
+
+.tab.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: white;
+}
+
+.seg {
+  display: flex;
+  gap: 8px;
+}
+
+.seg-btn {
+  flex: 1;
+  background: #0b1120;
+  border: 1px solid #374151;
+  color: #cbd5e1;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.seg-btn.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: white;
+}
+
 .notice {
   color: #fbbf24;
   font-size: 0.85rem;
