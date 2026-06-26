@@ -301,6 +301,12 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
                   <code className="lesson-line">{lesson.line}</code>
                 )}
                 <p className="tutorial-desc">{lesson.description}</p>
+                {lesson.middlegamePlan && (
+                  <div className="tutorial-middlegame-plan">
+                    <h4 className="tutorial-plan-heading">แผนกลางเกม</h4>
+                    <p className="tutorial-plan-text">{lesson.middlegamePlan}</p>
+                  </div>
+                )}
               </>
             ) : (
               <>
