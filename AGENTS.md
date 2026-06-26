@@ -19,3 +19,4 @@ This is an npm **workspaces** monorepo for a real-time online chess game:
 - Black's board is rendered flipped (Black's perspective), which makes square-coordinate targeting tricky during automated GUI testing.
 - The backend has a quick health probe at `GET http://localhost:3001/health`.
 - Game logic can be tested headlessly by driving `socket.io-client` directly against the running server (join two sockets, emit `move`/`resign`), without a browser.
+- There is a **single-player vs-bot mode** that is fully client-side: `client/src/LocalGame.jsx` runs a local `chess.js` game and `client/src/bot.js` (minimax + alpha-beta) picks the bot's move. It does **not** touch the server/Socket.IO, so bot play works even with the backend down. The bot engine is plain JS and can be unit-tested headlessly by importing `getBotMove(fen, difficulty)` from `client/src/bot.js`.

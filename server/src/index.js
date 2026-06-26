@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
 import http from "node:http";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
 import { Chess } from "chess.js";
 
@@ -13,6 +16,18 @@ app.use(cors({ origin: CLIENT_ORIGIN }));
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", rooms: rooms.size });
 });
+
+// Serve the built frontend (client/dist) when it exists, so the whole app can
+// run from a single port/origin in production (e.g. `npm run build` + `npm start`).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.resolve(__dirname, "../../client/dist");
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+  console.log(`Serving frontend from ${clientDist}`);
+}
 
 const server = http.createServer(app);
 const io = new Server(server, {
