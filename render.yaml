@@ -1,0 +1,15 @@
+# Render Blueprint — one-click deploy of the whole app as a single web service.
+# The backend serves the built frontend, so only one service/port is needed.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: online-chess
+    runtime: node
+    plan: free
+    # --include=dev ensures Vite (a devDependency) is available for the build,
+    # even when the host sets NODE_ENV=production.
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
