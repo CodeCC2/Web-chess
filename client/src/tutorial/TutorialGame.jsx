@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { markLessonComplete } from "./lessons.js";
+import { buildMoveHighlights } from "../boardUtils.js";
 
 const HINT_FROM_STYLE = {
   background: "rgba(250, 204, 21, 0.45)",
@@ -161,18 +162,8 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
   }, []);
 
   const highlightLegalMoves = useCallback((square) => {
-    const game = gameRef.current;
-    const moves = game.moves({ square, verbose: true });
-    if (moves.length === 0) return false;
-    const styles = {};
-    for (const m of moves) {
-      styles[m.to] = {
-        background:
-          "radial-gradient(circle, rgba(99,102,241,0.55) 25%, transparent 28%)",
-        borderRadius: "50%",
-      };
-    }
-    styles[square] = { background: "rgba(99,102,241,0.35)" };
+    const styles = buildMoveHighlights(gameRef.current, square);
+    if (!styles) return false;
     setOptionSquares(styles);
     return true;
   }, []);

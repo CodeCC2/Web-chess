@@ -4,7 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { getBotMove, DIFFICULTY_LABELS, THINK_MS } from "./bot.js";
 import MoveList from "./MoveList.jsx";
 import PromotionPicker from "./PromotionPicker.jsx";
-import { isLegalMove, needsPromotion } from "./promotionUtils.js";
+import { useChessBoardInteraction } from "./useChessBoardInteraction.js";
 
 const DIFFICULTY_LABEL = DIFFICULTY_LABELS;
 
@@ -38,9 +38,6 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   const [fen, setFen] = useState(gameRef.current.fen());
   const [info, setInfo] = useState(() => computeStatus(gameRef.current));
   const [thinking, setThinking] = useState(false);
-  const [moveFrom, setMoveFrom] = useState(null);
-  const [optionSquares, setOptionSquares] = useState({});
-  const [pendingPromotion, setPendingPromotion] = useState(null);
   const botMoveGenRef = useRef(0);
 
   const playerChar = playerColor === "white" ? "w" : "b";
@@ -83,7 +80,6 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
     [sync]
   );
 
-  // Bot plays whenever it is its turn.
   useEffect(() => {
     const game = gameRef.current;
     if (game.isGameOver() || game.turn() !== botColor) return;
@@ -101,6 +97,33 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
     return () => clearTimeout(timer);
   }, [fen, botColor, difficulty, commitMove]);
 
+  const getGame = useCallback(() => gameRef.current, []);
+
+  const canPlay = useCallback(() => {
+    const game = gameRef.current;
+    return !game.isGameOver() && !thinking && game.turn() === playerChar;
+  }, [thinking, playerChar]);
+
+  const onMove = useCallback(
+    (from, to, promotion) => commitMove({ from, to, promotion }),
+    [commitMove]
+  );
+
+  const {
+    optionSquares,
+    pendingPromotion,
+    setPendingPromotion,
+    onPieceDrop,
+    onSquareClick,
+    handlePromotionSelect,
+    resetBoardUi,
+  } = useChessBoardInteraction({
+    getGame,
+    canPlay,
+    playerColor: playerChar,
+    onMove,
+  });
+
   const canUndo =
     info.history.length > 0 && !thinking && !pendingPromotion && !gameOver;
 
@@ -113,116 +136,16 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
     const plies = Math.min(2, game.history().length);
     for (let i = 0; i < plies; i++) game.undo();
 
-    setMoveFrom(null);
-    setOptionSquares({});
-    setPendingPromotion(null);
+    resetBoardUi();
     sync();
-  }, [canUndo, sync]);
-
-  const highlightLegalMoves = useCallback((square) => {
-    const game = gameRef.current;
-    const moves = game.moves({ square, verbose: true });
-    if (moves.length === 0) return false;
-    const styles = {};
-    for (const m of moves) {
-      styles[m.to] = {
-        background:
-          "radial-gradient(circle, rgba(99,102,241,0.55) 25%, transparent 28%)",
-        borderRadius: "50%",
-      };
-    }
-    styles[square] = { background: "rgba(99,102,241,0.35)" };
-    setOptionSquares(styles);
-    return true;
-  }, []);
-
-  const attemptMove = useCallback(
-    (from, to, promotion) => {
-      const game = gameRef.current;
-      if (game.isGameOver() || thinking) return false;
-      if (game.turn() !== playerChar) return false;
-
-      if (needsPromotion(game, from, to) && !promotion) {
-        setPendingPromotion({ from, to });
-        return false;
-      }
-
-      if (!isLegalMove(game, from, to, promotion)) return false;
-      return commitMove({ from, to, promotion });
-    },
-    [commitMove, playerChar, thinking]
-  );
-
-  const handlePromotionSelect = useCallback(
-    (piece) => {
-      if (!pendingPromotion) return;
-      const { from, to } = pendingPromotion;
-      setPendingPromotion(null);
-      setMoveFrom(null);
-      setOptionSquares({});
-      commitMove({ from, to, promotion: piece });
-    },
-    [pendingPromotion, commitMove]
-  );
-
-  const onPieceDrop = useCallback(
-    (source, target) => {
-      setMoveFrom(null);
-      setOptionSquares({});
-      return attemptMove(source, target);
-    },
-    [attemptMove]
-  );
-
-  const onSquareClick = useCallback(
-    (square) => {
-      const game = gameRef.current;
-      if (game.isGameOver() || thinking || game.turn() !== playerChar) return;
-
-      if (!moveFrom) {
-        const piece = game.get(square);
-        if (piece && piece.color === playerChar && highlightLegalMoves(square)) {
-          setMoveFrom(square);
-        }
-        return;
-      }
-      if (square === moveFrom) {
-        setMoveFrom(null);
-        setOptionSquares({});
-        return;
-      }
-
-      if (needsPromotion(game, moveFrom, square)) {
-        setPendingPromotion({ from: moveFrom, to: square });
-        setMoveFrom(null);
-        setOptionSquares({});
-        return;
-      }
-
-      if (attemptMove(moveFrom, square)) {
-        setMoveFrom(null);
-        setOptionSquares({});
-      } else {
-        const piece = game.get(square);
-        if (piece && piece.color === playerChar && highlightLegalMoves(square)) {
-          setMoveFrom(square);
-        } else {
-          setMoveFrom(null);
-          setOptionSquares({});
-        }
-      }
-    },
-    [moveFrom, thinking, playerChar, attemptMove, highlightLegalMoves]
-  );
+  }, [canUndo, resetBoardUi, sync]);
 
   const newGame = useCallback(() => {
     gameRef.current = new Chess();
-    setMoveFrom(null);
-    setOptionSquares({});
-    setPendingPromotion(null);
+    resetBoardUi();
     setThinking(false);
     sync();
-  }, [sync]);
+  }, [resetBoardUi, sync]);
 
   const isPlayerTurn = info.turn === playerColor && !gameOver;
 

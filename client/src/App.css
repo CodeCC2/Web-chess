@@ -715,3 +715,54 @@ button.link {
   font-size: 0.7rem;
   color: #9ca3af;
 }
+
+/* Chess clocks */
+.chess-clocks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.clock-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-row.active {
+  border-color: #6366f1;
+  background: #1e1b4b;
+}
+
+.clock-row.low .clock-time {
+  color: #f87171;
+}
+
+.clock-label {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  text-transform: capitalize;
+}
+
+.clock-time {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.clock-control-badge {
+  align-self: flex-end;
+  font-size: 0.75rem;
+  color: #a5b4fc;
+  background: #312e81;
+  padding: 2px 8px;
+  border-radius: 999px;
+}

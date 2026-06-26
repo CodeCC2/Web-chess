@@ -6,6 +6,16 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
 import { Chess } from "chess.js";
+import {
+  TIME_CONTROLS,
+  deriveChessStatus,
+  isGameFinished,
+  resolveTimeControl,
+  tickClock,
+  applyIncrement,
+  startClockIfNeeded,
+  resetClocks,
+} from "./roomUtils.js";
 
 const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
@@ -17,8 +27,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", rooms: rooms.size });
 });
 
-// Serve the built frontend (client/dist) when it exists, so the whole app can
-// run from a single port/origin in production (e.g. `npm run build` + `npm start`).
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");
 if (fs.existsSync(clientDist)) {
@@ -34,24 +42,31 @@ const io = new Server(server, {
   cors: { origin: CLIENT_ORIGIN, methods: ["GET", "POST"] },
 });
 
-/**
- * In-memory game store.
- * roomId -> {
- *   chess: Chess,
- *   players: { white: socketId|null, black: socketId|null },
- *   names: { white: string|null, black: string|null }
- * }
- */
+/** @type {Map<string, object>} */
 const rooms = new Map();
 
-function getOrCreateRoom(roomId) {
+function createRoom(timeControlKey = "none") {
+  const timeControl = resolveTimeControl(timeControlKey);
+  const room = {
+    chess: new Chess(),
+    players: { white: null, black: null },
+    names: { white: null, black: null },
+    timeControlKey: timeControl ? timeControlKey : "none",
+    timeControl,
+    clocks: timeControl
+      ? { white: timeControl.initial, black: timeControl.initial }
+      : { white: 0, black: 0 },
+    clockRunning: false,
+    lastTickAt: null,
+    gameOver: null,
+  };
+  return room;
+}
+
+function getOrCreateRoom(roomId, timeControlKey) {
   let room = rooms.get(roomId);
   if (!room) {
-    room = {
-      chess: new Chess(),
-      players: { white: null, black: null },
-      names: { white: null, black: null },
-    };
+    room = createRoom(timeControlKey);
     rooms.set(roomId, room);
   }
   return room;
@@ -65,23 +80,13 @@ function colorOf(room, socketId) {
 
 function buildState(room) {
   const chess = room.chess;
-  let status = "playing";
-  let winner = null;
+  const derived = deriveChessStatus(chess);
+  let status = derived.status;
+  let winner = derived.winner;
 
-  if (chess.isCheckmate()) {
-    status = "checkmate";
-    // The side to move is checkmated, so the other side won.
-    winner = chess.turn() === "w" ? "black" : "white";
-  } else if (chess.isStalemate()) {
-    status = "stalemate";
-  } else if (chess.isInsufficientMaterial()) {
-    status = "insufficient_material";
-  } else if (chess.isThreefoldRepetition()) {
-    status = "threefold_repetition";
-  } else if (chess.isDraw()) {
-    status = "draw";
-  } else if (chess.isCheck()) {
-    status = "check";
+  if (room.gameOver) {
+    status = room.gameOver.status;
+    winner = room.gameOver.winner;
   }
 
   return {
@@ -95,6 +100,10 @@ function buildState(room) {
       black: Boolean(room.players.black),
     },
     names: room.names,
+    timeControl: room.timeControlKey,
+    clocks: { ...room.clocks },
+    clockRunning: room.clockRunning,
+    serverNow: Date.now(),
   };
 }
 
@@ -104,25 +113,85 @@ function broadcastState(roomId) {
   io.to(roomId).emit("gameState", buildState(room));
 }
 
+function setGameOver(room, status, winner) {
+  room.gameOver = { status, winner };
+  room.clockRunning = false;
+  room.lastTickAt = null;
+}
+
+function declareOpponentWin(room, roomId, leavingColor) {
+  if (isGameFinished(room)) return;
+  const winner = leavingColor === "white" ? "black" : "white";
+  const opponentId = room.players[winner];
+  if (!opponentId) return;
+  setGameOver(room, "opponent_left", winner);
+  io.to(roomId).emit("gameOver", {
+    status: "opponent_left",
+    winner,
+  });
+  broadcastState(roomId);
+}
+
+function removePlayerFromRoom(socket, { awardWin = true } = {}) {
+  const roomId = socket.data.roomId;
+  if (!roomId) return;
+
+  const room = rooms.get(roomId);
+  if (!room) {
+    socket.data.roomId = null;
+    return;
+  }
+
+  const color = colorOf(room, socket.id);
+  socket.leave(roomId);
+  socket.data.roomId = null;
+
+  if (!color) return;
+
+  room.players[color] = null;
+  room.names[color] = null;
+
+  if (awardWin) {
+    declareOpponentWin(room, roomId, color);
+  } else {
+    socket.to(roomId).emit("opponentLeft", { color });
+  }
+
+  if (!room.players.white && !room.players.black) {
+    rooms.delete(roomId);
+  } else if (!awardWin || isGameFinished(room)) {
+    broadcastState(roomId);
+  }
+}
+
 io.on("connection", (socket) => {
   socket.data.roomId = null;
 
-  socket.on("joinGame", ({ roomId, name } = {}, ack) => {
+  socket.on("joinGame", ({ roomId, name, timeControl } = {}, ack) => {
     if (!roomId || typeof roomId !== "string") {
       ack?.({ ok: false, error: "Invalid room id" });
       return;
     }
 
-    const room = getOrCreateRoom(roomId);
+    if (socket.data.roomId && socket.data.roomId !== roomId) {
+      removePlayerFromRoom(socket, { awardWin: true });
+    }
 
-    // Assign an available color, else spectator.
-    let color = null;
-    if (!room.players.white) {
-      room.players.white = socket.id;
-      color = "white";
-    } else if (!room.players.black) {
-      room.players.black = socket.id;
-      color = "black";
+    const isNew = !rooms.has(roomId);
+    const room = getOrCreateRoom(
+      roomId,
+      isNew ? timeControl || "none" : "none"
+    );
+
+    let color = colorOf(room, socket.id);
+    if (!color) {
+      if (!room.players.white) {
+        room.players.white = socket.id;
+        color = "white";
+      } else if (!room.players.black) {
+        room.players.black = socket.id;
+        color = "black";
+      }
     }
 
     if (color) room.names[color] = name || `Player ${color}`;
@@ -137,13 +206,29 @@ io.on("connection", (socket) => {
     });
 
     broadcastState(roomId);
-    socket.to(roomId).emit("opponentJoined", { color });
+    if (color) socket.to(roomId).emit("opponentJoined", { color });
   });
 
-  socket.on("move", ({ roomId, from, to, promotion } = {}, ack) => {
+  socket.on("leaveGame", (_payload, ack) => {
+    removePlayerFromRoom(socket, { awardWin: true });
+    ack?.({ ok: true });
+  });
+
+  socket.on("move", ({ from, to, promotion } = {}, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "Not in a room" });
+      return;
+    }
+
     const room = rooms.get(roomId);
     if (!room) {
       ack?.({ ok: false, error: "Room not found" });
+      return;
+    }
+
+    if (isGameFinished(room)) {
+      ack?.({ ok: false, error: "Game is over" });
       return;
     }
 
@@ -159,6 +244,22 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (room.timeControl && room.players.white && room.players.black) {
+      if (!room.clockRunning) {
+        startClockIfNeeded(room);
+      } else {
+        const { timedOut } = tickClock(room);
+        if (timedOut) {
+          const winner = timedOut === "white" ? "black" : "white";
+          setGameOver(room, "timeout", winner);
+          ack?.({ ok: false, error: "Time is up" });
+          io.to(roomId).emit("gameOver", { status: "timeout", winner });
+          broadcastState(roomId);
+          return;
+        }
+      }
+    }
+
     let result;
     try {
       result = room.chess.move({ from, to, promotion: promotion || "q" });
@@ -171,48 +272,101 @@ io.on("connection", (socket) => {
       return;
     }
 
+    applyIncrement(room, color);
+
     ack?.({ ok: true });
     broadcastState(roomId);
   });
 
-  socket.on("resign", ({ roomId } = {}) => {
+  socket.on("resign", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "Not in a room" });
+      return;
+    }
+
     const room = rooms.get(roomId);
-    if (!room) return;
+    if (!room) {
+      ack?.({ ok: false, error: "Room not found" });
+      return;
+    }
+
     const color = colorOf(room, socket.id);
-    if (!color) return;
+    if (!color) {
+      ack?.({ ok: false, error: "You are a spectator" });
+      return;
+    }
+
+    if (isGameFinished(room)) {
+      ack?.({ ok: false, error: "Game is over" });
+      return;
+    }
+
     const winner = color === "white" ? "black" : "white";
+    setGameOver(room, "resign", winner);
+    ack?.({ ok: true });
     io.to(roomId).emit("gameOver", { status: "resign", winner });
+    broadcastState(roomId);
   });
 
-  socket.on("rematch", ({ roomId } = {}) => {
+  socket.on("rematch", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "Not in a room" });
+      return;
+    }
+
     const room = rooms.get(roomId);
-    if (!room) return;
+    if (!room) {
+      ack?.({ ok: false, error: "Room not found" });
+      return;
+    }
+
+    if (!colorOf(room, socket.id)) {
+      ack?.({ ok: false, error: "Only players can rematch" });
+      return;
+    }
+
     room.chess = new Chess();
+    room.gameOver = null;
+    room.clockRunning = false;
+    room.lastTickAt = null;
+    resetClocks(room);
+
+    ack?.({ ok: true });
     broadcastState(roomId);
     io.to(roomId).emit("rematchStarted");
   });
 
   socket.on("disconnect", () => {
-    const roomId = socket.data.roomId;
-    if (!roomId) return;
-    const room = rooms.get(roomId);
-    if (!room) return;
-
-    const color = colorOf(room, socket.id);
-    if (color) {
-      room.players[color] = null;
-      room.names[color] = null;
-      socket.to(roomId).emit("opponentLeft", { color });
-    }
-
-    if (!room.players.white && !room.players.black) {
-      rooms.delete(roomId);
-    } else {
-      broadcastState(roomId);
-    }
+    removePlayerFromRoom(socket, { awardWin: true });
   });
 });
+
+export { rooms, buildState, createRoom, TIME_CONTROLS };
 
 server.listen(PORT, () => {
   console.log(`Chess server listening on http://localhost:${PORT}`);
 });
+
+setInterval(() => {
+  for (const [roomId, room] of rooms) {
+    if (!room.clockRunning || isGameFinished(room)) continue;
+
+    const { timedOut } = tickClock(room);
+    if (timedOut) {
+      const winner = timedOut === "white" ? "black" : "white";
+      setGameOver(room, "timeout", winner);
+      io.to(roomId).emit("gameOver", { status: "timeout", winner });
+      broadcastState(roomId);
+      continue;
+    }
+
+    io.to(roomId).emit("clockUpdate", {
+      clocks: { ...room.clocks },
+      clockRunning: room.clockRunning,
+      turn: room.chess.turn() === "w" ? "white" : "black",
+      serverNow: Date.now(),
+    });
+  }
+}, 1000);

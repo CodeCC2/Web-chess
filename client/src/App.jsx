@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { socket } from "./socket.js";
@@ -9,8 +9,22 @@ import TutorialGame from "./tutorial/TutorialGame.jsx";
 import { lessons } from "./tutorial/lessons.js";
 import { DIFFICULTY_LABELS } from "./bot.js";
 import PromotionPicker from "./PromotionPicker.jsx";
-import { isLegalMove, needsPromotion } from "./promotionUtils.js";
+import ChessClock from "./ChessClock.jsx";
+import { isLegalMove } from "./promotionUtils.js";
+import { TIME_CONTROL_OPTIONS } from "./clockUtils.js";
+import { useChessBoardInteraction } from "./useChessBoardInteraction.js";
 import "./App.css";
+
+const FINISHED_STATUSES = new Set([
+  "checkmate",
+  "resign",
+  "stalemate",
+  "draw",
+  "insufficient_material",
+  "threefold_repetition",
+  "opponent_left",
+  "timeout",
+]);
 
 function randomRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -20,23 +34,27 @@ export default function App() {
   const [name, setName] = useState("");
   const [roomInput, setRoomInput] = useState("");
   const [roomId, setRoomId] = useState(null);
-  const [color, setColor] = useState(null); // "white" | "black" | "spectator"
+  const [color, setColor] = useState(null);
   const [state, setState] = useState(null);
   const [notice, setNotice] = useState("");
   const [connected, setConnected] = useState(socket.connected);
-  const [moveFrom, setMoveFrom] = useState(null);
-  const [optionSquares, setOptionSquares] = useState({});
-  const [pendingPromotion, setPendingPromotion] = useState(null);
+  const [timeControl, setTimeControl] = useState("none");
+  const [clockMeta, setClockMeta] = useState({
+    clocks: null,
+    clockRunning: false,
+    serverNow: null,
+  });
 
-  // Lobby mode + single-player (vs computer) config.
-  const [lobbyMode, setLobbyMode] = useState("online"); // "online" | "bot" | "tutorial"
+  const [lobbyMode, setLobbyMode] = useState("online");
   const [difficulty, setDifficulty] = useState("medium");
-  const [botColorChoice, setBotColorChoice] = useState("white"); // white | black | random
+  const [botColorChoice, setBotColorChoice] = useState("white");
   const [botConfig, setBotConfig] = useState(null);
 
-  // Tutorial mode
   const [tutorialLesson, setTutorialLesson] = useState(null);
   const [showLessonPicker, setShowLessonPicker] = useState(false);
+
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const startBotGame = useCallback(() => {
     const playerColor =
@@ -47,206 +65,6 @@ export default function App() {
         : botColorChoice;
     setBotConfig({ difficulty, playerColor });
   }, [botColorChoice, difficulty]);
-
-  useEffect(() => {
-    function onConnect() {
-      setConnected(true);
-    }
-    function onDisconnect() {
-      setConnected(false);
-    }
-    function onGameState(s) {
-      setState(s);
-      setMoveFrom(null);
-      setOptionSquares({});
-      setPendingPromotion(null);
-    }
-    function onOpponentJoined() {
-      setNotice("Opponent joined the game.");
-    }
-    function onOpponentLeft() {
-      setNotice("Opponent left the game.");
-    }
-    function onGameOver({ status, winner }) {
-      setState((prev) => (prev ? { ...prev, status, winner } : prev));
-    }
-    function onRematchStarted() {
-      setNotice("Rematch started!");
-    }
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-    socket.on("gameState", onGameState);
-    socket.on("opponentJoined", onOpponentJoined);
-    socket.on("opponentLeft", onOpponentLeft);
-    socket.on("gameOver", onGameOver);
-    socket.on("rematchStarted", onRematchStarted);
-
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("gameState", onGameState);
-      socket.off("opponentJoined", onOpponentJoined);
-      socket.off("opponentLeft", onOpponentLeft);
-      socket.off("gameOver", onGameOver);
-      socket.off("rematchStarted", onRematchStarted);
-    };
-  }, []);
-
-  const joinGame = useCallback(
-    (targetRoom) => {
-      const id = (targetRoom || roomInput || randomRoomId()).toUpperCase();
-      socket.emit(
-        "joinGame",
-        { roomId: id, name: name.trim() || "Anonymous" },
-        (res) => {
-          if (!res?.ok) {
-            setNotice(res?.error || "Failed to join");
-            return;
-          }
-          setRoomId(id);
-          setColor(res.color);
-          setState(res.state);
-          setNotice(
-            res.color === "spectator"
-              ? "Game is full — you are spectating."
-              : `You are playing as ${res.color}.`
-          );
-        }
-      );
-    },
-    [name, roomInput]
-  );
-
-  const sendMove = useCallback(
-    (sourceSquare, targetSquare, promotion) => {
-      socket.emit("move", {
-        roomId,
-        from: sourceSquare,
-        to: targetSquare,
-        promotion,
-      });
-    },
-    [roomId]
-  );
-
-  const attemptMove = useCallback(
-    (sourceSquare, targetSquare, promotion) => {
-      if (!state || !roomId) return false;
-      if (color !== state.turn) return false;
-
-      const probe = new Chess(state.fen);
-
-      if (needsPromotion(probe, sourceSquare, targetSquare) && !promotion) {
-        setPendingPromotion({ from: sourceSquare, to: targetSquare });
-        return false;
-      }
-
-      if (!isLegalMove(probe, sourceSquare, targetSquare, promotion)) {
-        return false;
-      }
-
-      sendMove(sourceSquare, targetSquare, promotion);
-      return true;
-    },
-    [state, roomId, color, sendMove]
-  );
-
-  const handlePromotionSelect = useCallback(
-    (piece) => {
-      if (!pendingPromotion) return;
-      const { from, to } = pendingPromotion;
-      setPendingPromotion(null);
-      setMoveFrom(null);
-      setOptionSquares({});
-      sendMove(from, to, piece);
-    },
-    [pendingPromotion, sendMove]
-  );
-
-  const onPieceDrop = useCallback(
-    (sourceSquare, targetSquare) => {
-      setMoveFrom(null);
-      setOptionSquares({});
-      return attemptMove(sourceSquare, targetSquare);
-    },
-    [attemptMove]
-  );
-
-  const highlightLegalMoves = useCallback(
-    (square) => {
-      if (!state) return false;
-      const probe = new Chess(state.fen);
-      const moves = probe.moves({ square, verbose: true });
-      if (moves.length === 0) return false;
-      const styles = {};
-      for (const m of moves) {
-        styles[m.to] = {
-          background:
-            "radial-gradient(circle, rgba(99,102,241,0.55) 25%, transparent 28%)",
-          borderRadius: "50%",
-        };
-      }
-      styles[square] = { background: "rgba(99,102,241,0.35)" };
-      setOptionSquares(styles);
-      return true;
-    },
-    [state]
-  );
-
-  const onSquareClick = useCallback(
-    (square) => {
-      const finished =
-        state &&
-        ["checkmate", "resign", "stalemate", "draw", "insufficient_material", "threefold_repetition"].includes(
-          state.status
-        );
-      if (!state || color === "spectator" || finished) return;
-      if (color !== state.turn) return;
-
-      if (!moveFrom) {
-        const probe = new Chess(state.fen);
-        const piece = probe.get(square);
-        const myTurnColor = color === "white" ? "w" : "b";
-        if (piece && piece.color === myTurnColor && highlightLegalMoves(square)) {
-          setMoveFrom(square);
-        }
-        return;
-      }
-
-      if (square === moveFrom) {
-        setMoveFrom(null);
-        setOptionSquares({});
-        return;
-      }
-
-      const probe = new Chess(state.fen);
-      if (needsPromotion(probe, moveFrom, square)) {
-        setPendingPromotion({ from: moveFrom, to: square });
-        setMoveFrom(null);
-        setOptionSquares({});
-        return;
-      }
-
-      const moved = attemptMove(moveFrom, square);
-      if (moved) {
-        setMoveFrom(null);
-        setOptionSquares({});
-      } else {
-        // Allow reselecting another of your own pieces.
-        const probe = new Chess(state.fen);
-        const piece = probe.get(square);
-        const myTurnColor = color === "white" ? "w" : "b";
-        if (piece && piece.color === myTurnColor && highlightLegalMoves(square)) {
-          setMoveFrom(square);
-        } else {
-          setMoveFrom(null);
-          setOptionSquares({});
-        }
-      }
-    },
-    [state, color, moveFrom, attemptMove, highlightLegalMoves]
-  );
 
   const gameOver = useMemo(() => {
     if (!state) return null;
@@ -263,12 +81,172 @@ export default function App() {
         ? "Opponent resigned — you win!"
         : "You resigned — you lose.";
     }
+    if (s === "opponent_left") {
+      if (color === "spectator")
+        return `A player left — ${state.winner} wins!`;
+      return state.winner === color
+        ? "Opponent left — you win!"
+        : "You left — you lose.";
+    }
+    if (s === "timeout") {
+      if (color === "spectator")
+        return `Time out — ${state.winner} wins!`;
+      return state.winner === color
+        ? "Opponent ran out of time — you win!"
+        : "You ran out of time — you lose.";
+    }
     if (s === "stalemate") return "Draw — stalemate.";
     if (s === "draw") return "Draw.";
     if (s === "insufficient_material") return "Draw — insufficient material.";
     if (s === "threefold_repetition") return "Draw — threefold repetition.";
     return null;
   }, [state, color]);
+
+  const sendMove = useCallback((sourceSquare, targetSquare, promotion) => {
+    socket.emit(
+      "move",
+      { from: sourceSquare, to: targetSquare, promotion },
+      (res) => {
+        if (!res?.ok) setNotice(res?.error || "Move rejected");
+      }
+    );
+  }, []);
+
+  const getGame = useCallback(
+    () => new Chess(stateRef.current?.fen || undefined),
+    []
+  );
+
+  const canPlay = useCallback(() => {
+    const s = stateRef.current;
+    if (!s || color === "spectator") return false;
+    if (FINISHED_STATUSES.has(s.status)) return false;
+    return color === s.turn;
+  }, [color]);
+
+  const onMove = useCallback(
+    (from, to, promotion) => {
+      const s = stateRef.current;
+      if (!s || !roomId) return false;
+      const probe = new Chess(s.fen);
+      if (!isLegalMove(probe, from, to, promotion)) return false;
+      sendMove(from, to, promotion);
+      return true;
+    },
+    [roomId, sendMove]
+  );
+
+  const {
+    optionSquares,
+    pendingPromotion,
+    setPendingPromotion,
+    onPieceDrop,
+    onSquareClick,
+    handlePromotionSelect,
+    resetBoardUi,
+  } = useChessBoardInteraction({
+    getGame,
+    canPlay,
+    playerColor: color === "black" ? "b" : "w",
+    onMove,
+  });
+
+  useEffect(() => {
+    function onConnect() {
+      setConnected(true);
+    }
+    function onDisconnect() {
+      setConnected(false);
+    }
+    function onGameState(s) {
+      setState(s);
+      setClockMeta({
+        clocks: s.clocks,
+        clockRunning: s.clockRunning,
+        serverNow: s.serverNow,
+      });
+      resetBoardUi();
+    }
+    function onOpponentJoined() {
+      setNotice("Opponent joined the game.");
+    }
+    function onOpponentLeft() {
+      setNotice("Opponent left the game.");
+    }
+    function onGameOver({ status, winner }) {
+      setState((prev) => (prev ? { ...prev, status, winner } : prev));
+    }
+    function onRematchStarted() {
+      setNotice("Rematch started!");
+    }
+    function onClockUpdate(payload) {
+      setClockMeta({
+        clocks: payload.clocks,
+        clockRunning: payload.clockRunning,
+        serverNow: payload.serverNow,
+      });
+      setState((prev) =>
+        prev
+          ? {
+              ...prev,
+              clocks: payload.clocks,
+              clockRunning: payload.clockRunning,
+              turn: payload.turn,
+            }
+          : prev
+      );
+    }
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("gameState", onGameState);
+    socket.on("opponentJoined", onOpponentJoined);
+    socket.on("opponentLeft", onOpponentLeft);
+    socket.on("gameOver", onGameOver);
+    socket.on("rematchStarted", onRematchStarted);
+    socket.on("clockUpdate", onClockUpdate);
+
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("gameState", onGameState);
+      socket.off("opponentJoined", onOpponentJoined);
+      socket.off("opponentLeft", onOpponentLeft);
+      socket.off("gameOver", onGameOver);
+      socket.off("rematchStarted", onRematchStarted);
+      socket.off("clockUpdate", onClockUpdate);
+    };
+  }, [resetBoardUi]);
+
+  const joinGame = useCallback(
+    (targetRoom) => {
+      const id = (targetRoom || roomInput || randomRoomId()).toUpperCase();
+      socket.emit(
+        "joinGame",
+        { roomId: id, name: name.trim() || "Anonymous", timeControl },
+        (res) => {
+          if (!res?.ok) {
+            setNotice(res?.error || "Failed to join");
+            return;
+          }
+          setRoomId(id);
+          setColor(res.color);
+          setState(res.state);
+          setClockMeta({
+            clocks: res.state.clocks,
+            clockRunning: res.state.clockRunning,
+            serverNow: res.state.serverNow,
+          });
+          setNotice(
+            res.color === "spectator"
+              ? "Game is full — you are spectating."
+              : `You are playing as ${res.color}.`
+          );
+        }
+      );
+    },
+    [name, roomInput, timeControl]
+  );
 
   const handleTutorialNext = useCallback(() => {
     if (!tutorialLesson) return;
@@ -282,17 +260,19 @@ export default function App() {
   }, [tutorialLesson]);
 
   const goHome = useCallback(() => {
+    if (roomId) {
+      socket.emit("leaveGame", {}, () => {});
+    }
     setRoomId(null);
     setColor(null);
     setState(null);
     setNotice("");
-    setMoveFrom(null);
-    setOptionSquares({});
-    setPendingPromotion(null);
+    resetBoardUi();
+    setClockMeta({ clocks: null, clockRunning: false, serverNow: null });
     setBotConfig(null);
     setTutorialLesson(null);
     setShowLessonPicker(false);
-  }, []);
+  }, [roomId, resetBoardUi]);
 
   if (tutorialLesson) {
     return (
@@ -378,6 +358,23 @@ export default function App() {
                   maxLength={8}
                 />
               </label>
+              <label>
+                Time control
+                <div className="seg seg-wrap">
+                  {TIME_CONTROL_OPTIONS.map((tc) => (
+                    <button
+                      key={tc.id}
+                      type="button"
+                      className={
+                        timeControl === tc.id ? "seg-btn active" : "seg-btn"
+                      }
+                      onClick={() => setTimeControl(tc.id)}
+                    >
+                      {tc.label}
+                    </button>
+                  ))}
+                </div>
+              </label>
               <div className="row">
                 <button className="primary" onClick={() => joinGame()}>
                   {roomInput ? "Join room" : "Create new game"}
@@ -450,6 +447,8 @@ export default function App() {
   const turnLabel =
     state?.turn === color ? "Your move" : "Opponent's move";
 
+  const clocks = clockMeta.clocks ?? state?.clocks;
+
   return (
     <div className="app game">
       <header className="game-header">
@@ -472,6 +471,13 @@ export default function App() {
 
       <div className="game-body">
         <div className="board-wrap">
+          <ChessClock
+            clocks={clocks}
+            turn={state?.turn}
+            clockRunning={clockMeta.clockRunning ?? state?.clockRunning}
+            serverNow={clockMeta.serverNow ?? state?.serverNow}
+            timeControl={state?.timeControl}
+          />
           <Chessboard
             id="online-board"
             position={state?.fen}
@@ -520,8 +526,14 @@ export default function App() {
               )}
             </div>
             <div className="players">
-              <span>White: {state?.players?.white ? "🟢" : "⚪"} {state?.names?.white || "waiting..."}</span>
-              <span>Black: {state?.players?.black ? "🟢" : "⚪"} {state?.names?.black || "waiting..."}</span>
+              <span>
+                White: {state?.players?.white ? "🟢" : "⚪"}{" "}
+                {state?.names?.white || "waiting..."}
+              </span>
+              <span>
+                Black: {state?.players?.black ? "🟢" : "⚪"}{" "}
+                {state?.names?.black || "waiting..."}
+              </span>
             </div>
           </div>
 
@@ -529,7 +541,11 @@ export default function App() {
             {color !== "spectator" && !gameOver && (
               <button
                 className="danger"
-                onClick={() => socket.emit("resign", { roomId })}
+                onClick={() =>
+                  socket.emit("resign", {}, (res) => {
+                    if (!res?.ok) setNotice(res?.error || "Could not resign");
+                  })
+                }
               >
                 Resign
               </button>
@@ -537,7 +553,11 @@ export default function App() {
             {gameOver && color !== "spectator" && (
               <button
                 className="primary"
-                onClick={() => socket.emit("rematch", { roomId })}
+                onClick={() =>
+                  socket.emit("rematch", {}, (res) => {
+                    if (!res?.ok) setNotice(res?.error || "Could not rematch");
+                  })
+                }
               >
                 Rematch
               </button>
