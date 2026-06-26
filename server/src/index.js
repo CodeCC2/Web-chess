@@ -19,6 +19,13 @@ import {
 
 const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
+const MAX_CHAT_LENGTH = 200;
+const MAX_CHAT_MESSAGES = 100;
+
+function sanitizeChatText(text) {
+  if (typeof text !== "string") return "";
+  return text.trim().slice(0, MAX_CHAT_LENGTH);
+}
 
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
@@ -59,6 +66,7 @@ function createRoom(timeControlKey = "none") {
     clockRunning: false,
     lastTickAt: null,
     gameOver: null,
+    chat: [],
   };
   return room;
 }
@@ -104,6 +112,7 @@ function buildState(room) {
     clocks: { ...room.clocks },
     clockRunning: room.clockRunning,
     serverNow: Date.now(),
+    chat: room.chat,
   };
 }
 
@@ -195,6 +204,7 @@ io.on("connection", (socket) => {
     }
 
     if (color) room.names[color] = name || `Player ${color}`;
+    socket.data.displayName = name?.trim() || "Anonymous";
 
     socket.data.roomId = roomId;
     socket.join(roomId);
@@ -336,6 +346,46 @@ io.on("connection", (socket) => {
     ack?.({ ok: true });
     broadcastState(roomId);
     io.to(roomId).emit("rematchStarted");
+  });
+
+  socket.on("chatMessage", ({ text } = {}, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "Not in a room" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "Room not found" });
+      return;
+    }
+
+    const sanitized = sanitizeChatText(text);
+    if (!sanitized) {
+      ack?.({ ok: false, error: "Empty message" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    const message = {
+      id: `${Date.now()}-${socket.id.slice(0, 6)}`,
+      name:
+        (color && room.names[color]) ||
+        socket.data.displayName ||
+        "Anonymous",
+      color: color || "spectator",
+      text: sanitized,
+      ts: Date.now(),
+    };
+
+    room.chat.push(message);
+    if (room.chat.length > MAX_CHAT_MESSAGES) {
+      room.chat.splice(0, room.chat.length - MAX_CHAT_MESSAGES);
+    }
+
+    io.to(roomId).emit("chatMessage", message);
+    ack?.({ ok: true });
   });
 
   socket.on("disconnect", () => {

@@ -15,6 +15,7 @@ import PromotionPicker from "./PromotionPicker.jsx";
 import ChessClock from "./ChessClock.jsx";
 import { isLegalMove } from "./promotionUtils.js";
 import { TIME_CONTROL_OPTIONS } from "./clockUtils.js";
+import RoomChat from "./RoomChat.jsx";
 import { useChessBoardInteraction } from "./useChessBoardInteraction.js";
 import "./App.css";
 
@@ -58,6 +59,7 @@ export default function App() {
 
   const [activePuzzle, setActivePuzzle] = useState(null);
   const [showPuzzlePicker, setShowPuzzlePicker] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -166,6 +168,9 @@ export default function App() {
     }
     function onGameState(s) {
       setState(s);
+      if (Array.isArray(s.chat)) {
+        setChatMessages(s.chat);
+      }
       setClockMeta({
         clocks: s.clocks,
         clockRunning: s.clockRunning,
@@ -202,6 +207,12 @@ export default function App() {
           : prev
       );
     }
+    function onChatMessage(message) {
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
+    }
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
@@ -211,6 +222,7 @@ export default function App() {
     socket.on("gameOver", onGameOver);
     socket.on("rematchStarted", onRematchStarted);
     socket.on("clockUpdate", onClockUpdate);
+    socket.on("chatMessage", onChatMessage);
 
     return () => {
       socket.off("connect", onConnect);
@@ -221,6 +233,7 @@ export default function App() {
       socket.off("gameOver", onGameOver);
       socket.off("rematchStarted", onRematchStarted);
       socket.off("clockUpdate", onClockUpdate);
+      socket.off("chatMessage", onChatMessage);
     };
   }, [resetBoardUi]);
 
@@ -238,6 +251,7 @@ export default function App() {
           setRoomId(id);
           setColor(res.color);
           setState(res.state);
+          setChatMessages(res.state?.chat || []);
           setClockMeta({
             clocks: res.state.clocks,
             clockRunning: res.state.clockRunning,
@@ -282,6 +296,12 @@ export default function App() {
     setShowPuzzlePicker(false);
   }, []);
 
+  const sendChat = useCallback((text) => {
+    socket.emit("chatMessage", { text }, (res) => {
+      if (!res?.ok) setNotice(res?.error || "Could not send message");
+    });
+  }, []);
+
   const goHome = useCallback(() => {
     if (roomId) {
       socket.emit("leaveGame", {}, () => {});
@@ -289,6 +309,7 @@ export default function App() {
     setRoomId(null);
     setColor(null);
     setState(null);
+    setChatMessages([]);
     setNotice("");
     resetBoardUi();
     setClockMeta({ clocks: null, clockRunning: false, serverNow: null });
@@ -640,6 +661,14 @@ export default function App() {
           </div>
 
           <MoveList history={state?.history || []} />
+
+          <div className="panel-section room-chat-section">
+            <RoomChat
+              messages={chatMessages}
+              onSend={sendChat}
+              disabled={!connected}
+            />
+          </div>
 
           {notice && <p className="notice">{notice}</p>}
         </aside>
