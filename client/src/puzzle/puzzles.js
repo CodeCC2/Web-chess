@@ -5,899 +5,2053 @@
 
 export const puzzles = [
   {
-    "id": "rook-mate-a",
-    "title": "เรือ a8#",
+    "id": "lz-00gv1",
+    "title": "รุมฆาตใน 3 ตา",
     "theme": "mate",
     "themeLabel": "รุมฆาต",
     "difficulty": "easy",
-    "icon": "♜",
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "a1→a8",
-    "solution": [
-      {
-        "from": "a1",
-        "to": "a8"
-      }
-    ]
-  },
-  {
-    "id": "rook-mate-d",
-    "title": "เรือ d8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♜",
-    "fen": "6k1/5ppp/8/8/8/8/4P1PP/3R2K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "d1→d8",
-    "solution": [
-      {
-        "from": "d1",
-        "to": "d8"
-      }
-    ]
-  },
-  {
-    "id": "queen-mate-d8",
-    "title": "ควีน d8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/3Q2K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "d1→d8",
-    "solution": [
-      {
-        "from": "d1",
-        "to": "d8"
-      }
-    ]
-  },
-  {
-    "id": "queen-mate-a8",
-    "title": "ควีน a8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/8/8/6PP/Q5K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "a1→a8",
-    "solution": [
-      {
-        "from": "a1",
-        "to": "a8"
-      }
-    ]
-  },
-  {
-    "id": "queen-mate-e8",
-    "title": "ควีน e8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/4Q1K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "e1→e8",
-    "solution": [
-      {
-        "from": "e1",
-        "to": "e8"
-      }
-    ]
-  },
-  {
-    "id": "q-d3-d8",
-    "title": "ควีน d3→d8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/8/3Q4/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "d3→d8",
-    "solution": [
-      {
-        "from": "d3",
-        "to": "d8"
-      }
-    ]
-  },
-  {
-    "id": "q-a3-a8",
-    "title": "ควีน a3→a8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/8/Q7/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "a3→a8",
-    "solution": [
-      {
-        "from": "a3",
-        "to": "a8"
-      }
-    ]
-  },
-  {
-    "id": "q-c4-c8",
-    "title": "ควีน c4→c8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/2Q5/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "c4→c8",
-    "solution": [
-      {
-        "from": "c4",
-        "to": "c8"
-      }
-    ]
-  },
-  {
-    "id": "q-e5-e8",
-    "title": "ควีน e5→e8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/4Q3/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "e5→e8",
-    "solution": [
-      {
-        "from": "e5",
-        "to": "e8"
-      }
-    ]
-  },
-  {
-    "id": "q-d6-d8",
-    "title": "ควีน d6→d8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/3Q4/8/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "d6→d8",
-    "solution": [
-      {
-        "from": "d6",
-        "to": "d8"
-      }
-    ]
-  },
-  {
-    "id": "q-c6-c8",
-    "title": "ควีน c6→c8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/2Q5/8/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "c6→c8",
-    "solution": [
-      {
-        "from": "c6",
-        "to": "c8"
-      }
-    ]
-  },
-  {
-    "id": "q-b6-b8",
-    "title": "ควีน b6→b8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/1Q6/8/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "b6→b8",
-    "solution": [
-      {
-        "from": "b6",
-        "to": "b8"
-      }
-    ]
-  },
-  {
-    "id": "q-e6-e8",
-    "title": "ควีน e6→e8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♕",
-    "fen": "6k1/5ppp/4Q3/8/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "e6→e8",
+    "icon": "♛",
+    "fen": "3R4/1pp1r1kp/4r1p1/p1P5/5Q2/P4PPq/1P5P/3R2K1 b - - 3 32",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
     "solution": [
       {
         "from": "e6",
-        "to": "e8"
-      }
-    ]
-  },
-  {
-    "id": "r-a8-7k",
-    "title": "เรือ a8# (มุม)",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♜",
-    "fen": "7k/5ppp/8/8/8/8/6PP/R5K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "a1→a8",
-    "solution": [
-      {
-        "from": "a1",
-        "to": "a8"
-      }
-    ]
-  },
-  {
-    "id": "r-a8-7k2",
-    "title": "เรือ a8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "easy",
-    "icon": "♜",
-    "fen": "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "a1→a8",
-    "solution": [
-      {
-        "from": "a1",
-        "to": "a8"
-      }
-    ]
-  },
-  {
-    "id": "queen-mate-h8-corner",
-    "title": "ควีน d8# (มุม)",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "fen": "7k/5ppp/5Q2/8/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "Qd8#",
-    "solution": [
-      {
-        "from": "f6",
-        "to": "d8"
-      }
-    ]
-  },
-  {
-    "id": "tactic-re8-mate",
-    "title": "เรือ xe8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♜",
-    "fen": "4r1k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "e1→e8",
-    "solution": [
-      {
-        "from": "e1",
-        "to": "e8"
-      }
-    ]
-  },
-  {
-    "id": "piece-mate-nf7",
-    "title": "ม้า f7#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♟️",
-    "fen": "6rk/5ppp/8/6N1/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "g5→f7",
-    "solution": [
-      {
-        "from": "g5",
-        "to": "f7"
-      }
-    ]
-  },
-  {
-    "id": "mate2-queen-box",
-    "title": "รุมฆาตควีน 2 ตา",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/4Q1K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาตใน 2 ตา",
-    "hint": "Qe7+ แล้วตามด้วยรุมฆาต",
-    "solution": [
-      {
-        "from": "e1",
-        "to": "e7"
+        "to": "e1"
       },
-      {
-        "from": "g8",
-        "to": "h8"
-      },
-      {
-        "from": "e7",
-        "to": "f8"
-      }
-    ]
-  },
-  {
-    "id": "mate2-rook-7th",
-    "title": "รุมฆาตเรือ 2 ตา",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♜",
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาตใน 2 ตา",
-    "hint": "Re7+ แล้ว Re8#",
-    "solution": [
-      {
-        "from": "e1",
-        "to": "e7"
-      },
-      {
-        "from": "g8",
-        "to": "h8"
-      },
-      {
-        "from": "e7",
-        "to": "e8"
-      }
-    ]
-  },
-  {
-    "id": "tactic-scholar",
-    "title": "Scholar's mate",
-    "theme": "tactic",
-    "themeLabel": "แท็กติก",
-    "difficulty": "easy",
-    "icon": "🎯",
-    "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
-    "prompt": "ขาวเดิน — รุมฆาตทันที",
-    "hint": "Qxf7#",
-    "solution": [
-      {
-        "from": "h5",
-        "to": "f7"
-      }
-    ]
-  },
-  {
-    "id": "fork-nc7",
-    "title": "ม้าส้อม c7",
-    "theme": "fork",
-    "themeLabel": "ส้อม",
-    "difficulty": "medium",
-    "icon": "♞",
-    "fen": "1k6/r7/8/1N6/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "ม้าส้อมคิงกับเรือ",
-    "solution": [
-      {
-        "from": "b5",
-        "to": "c7"
-      }
-    ]
-  },
-  {
-    "id": "fork-ne5",
-    "title": "ม้าส้อม e5",
-    "theme": "fork",
-    "themeLabel": "ส้อม",
-    "difficulty": "medium",
-    "icon": "♞",
-    "fen": "4k3/8/8/4r3/8/5N2/8/4K2R w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "ม้าส้อมคิงกับเรือ",
-    "solution": [
-      {
-        "from": "f3",
-        "to": "e5"
-      }
-    ]
-  },
-  {
-    "id": "fork-qd5",
-    "title": "ควีนส้อม d5",
-    "theme": "fork",
-    "themeLabel": "ส้อม",
-    "difficulty": "medium",
-    "icon": "♞",
-    "fen": "4r1k1/5ppp/8/8/3Q4/8/5PPP/5RK1 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "ควีนส้อมคิงกับเรือ",
-    "solution": [
-      {
-        "from": "d4",
-        "to": "d5"
-      }
-    ]
-  },
-  {
-    "id": "fork-nd5",
-    "title": "ม้าส้อม f5",
-    "theme": "fork",
-    "themeLabel": "ส้อม",
-    "difficulty": "medium",
-    "icon": "♞",
-    "fen": "4k3/8/3n4/8/3N4/8/8/4K3 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "ม้าส้อมม้ากับคิง",
-    "solution": [
-      {
-        "from": "d4",
-        "to": "f5"
-      }
-    ]
-  },
-  {
-    "id": "fork-nc3",
-    "title": "ม้าส้อม d6",
-    "theme": "fork",
-    "themeLabel": "ส้อม",
-    "difficulty": "medium",
-    "icon": "♞",
-    "fen": "4k3/8/3r4/8/2N5/8/8/4K3 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "ม้าส้อมเรือกับคิง",
-    "solution": [
-      {
-        "from": "c4",
-        "to": "d6"
-      }
-    ]
-  },
-  {
-    "id": "fork-na4",
-    "title": "ม้าส้อม e5",
-    "theme": "fork",
-    "themeLabel": "ส้อม",
-    "difficulty": "medium",
-    "icon": "♞",
-    "fen": "4k3/8/8/4r3/2N5/8/8/4K3 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "ม้าส้อมเรือกับคิง",
-    "solution": [
-      {
-        "from": "c4",
-        "to": "e5"
-      }
-    ]
-  },
-  {
-    "id": "pin-bishop-b5",
-    "title": "พินบิชอป b5",
-    "theme": "pin",
-    "themeLabel": "พิน",
-    "difficulty": "medium",
-    "icon": "📌",
-    "fen": "r1bqk2r/pppp1ppp/2n2n2/4p3/1PB1P3/8/PP1P1PPP/RNBQK1NR w KQkq - 2 4",
-    "prompt": "ขาวเดิน — พินม้า c6",
-    "hint": "Bb5",
-    "solution": [
-      {
-        "from": "c4",
-        "to": "b5"
-      }
-    ]
-  },
-  {
-    "id": "pin-rd8",
-    "title": "เรือ x d8 ชนะเรือ",
-    "theme": "tactic",
-    "themeLabel": "แท็กติก",
-    "difficulty": "medium",
-    "icon": "♜",
-    "fen": "4r1k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "Rxd8",
-    "solution": [
       {
         "from": "d1",
-        "to": "d8"
+        "to": "e1"
+      },
+      {
+        "from": "e7",
+        "to": "e1"
+      },
+      {
+        "from": "g1",
+        "to": "f2"
+      },
+      {
+        "from": "h3",
+        "to": "f1"
       }
     ]
   },
   {
-    "id": "win-qxd8",
-    "title": "ควีน x d8 ชนะเรือ",
-    "theme": "tactic",
-    "themeLabel": "แท็กติก",
+    "id": "lz-00ycz",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
     "difficulty": "medium",
-    "icon": "♕",
-    "fen": "4r1k1/5ppp/8/8/3Q4/8/5PPP/5RK1 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "Qxd8",
+    "icon": "♛",
+    "fen": "5k2/5r1p/pp2Q3/8/8/1P6/P1q2PPP/4R1K1 b - - 0 32",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
     "solution": [
+      {
+        "from": "c2",
+        "to": "f2"
+      },
+      {
+        "from": "g1",
+        "to": "h1"
+      },
+      {
+        "from": "f2",
+        "to": "f1"
+      },
+      {
+        "from": "e1",
+        "to": "f1"
+      },
+      {
+        "from": "f7",
+        "to": "f1"
+      }
+    ]
+  },
+  {
+    "id": "lz-00rw0",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "r2q3k/5P2/2n3Bp/3p2pP/pp1b2Q1/6B1/1PP5/6K1 w - - 0 40",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g4",
+        "to": "d4"
+      },
+      {
+        "from": "c6",
+        "to": "d4"
+      },
+      {
+        "from": "g3",
+        "to": "e5"
+      },
+      {
+        "from": "d8",
+        "to": "f6"
+      },
+      {
+        "from": "e5",
+        "to": "f6"
+      }
+    ]
+  },
+  {
+    "id": "lz-010ws",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "6k1/p2Q4/3p2p1/8/3qPn2/5P2/PP3RPP/6K1 b - - 3 37",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "f4",
+        "to": "e2"
+      },
+      {
+        "from": "g1",
+        "to": "h1"
+      },
       {
         "from": "d4",
-        "to": "d8"
+        "to": "d1"
+      },
+      {
+        "from": "f2",
+        "to": "f1"
+      },
+      {
+        "from": "d1",
+        "to": "f1"
       }
     ]
   },
   {
-    "id": "promo-e8q",
-    "title": "เดินเบี้ย e8=ควีน",
-    "theme": "promotion",
-    "themeLabel": "เดินเบี้ย",
-    "difficulty": "medium",
-    "icon": "♙",
-    "fen": "8/4P3/8/8/8/8/8/4K2k w - - 0 1",
-    "prompt": "ขาวเดิน — เดินเบี้ยชนะ",
-    "hint": "e7→e8=q",
+    "id": "lz-01iwu",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "easy",
+    "icon": "♛",
+    "fen": "7k/4q1p1/4p1B1/8/3n4/P6P/4QPP1/2r1N1K1 w - - 5 36",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
     "solution": [
       {
-        "from": "e7",
-        "to": "e8",
-        "promotion": "q"
-      }
-    ]
-  },
-  {
-    "id": "promo-h8r",
-    "title": "เดินเบี้ย h8=เรือ",
-    "theme": "promotion",
-    "themeLabel": "เดินเบี้ย",
-    "difficulty": "medium",
-    "icon": "♙",
-    "fen": "8/7P/8/8/8/8/8/4K2k w - - 0 1",
-    "prompt": "ขาวเดิน — เดินเบี้ยชนะ",
-    "hint": "h7→h8=r",
-    "solution": [
+        "from": "e2",
+        "to": "h5"
+      },
+      {
+        "from": "h8",
+        "to": "g8"
+      },
+      {
+        "from": "h5",
+        "to": "h7"
+      },
+      {
+        "from": "g8",
+        "to": "f8"
+      },
       {
         "from": "h7",
-        "to": "h8",
-        "promotion": "r"
-      }
-    ]
-  },
-  {
-    "id": "promo-b8q",
-    "title": "เดินเบี้ย b8=ควีน",
-    "theme": "promotion",
-    "themeLabel": "เดินเบี้ย",
-    "difficulty": "medium",
-    "icon": "♙",
-    "fen": "8/1P6/8/8/8/8/8/4K2k w - - 0 1",
-    "prompt": "ขาวเดิน — เดินเบี้ยชนะ",
-    "hint": "b7→b8=q",
-    "solution": [
-      {
-        "from": "b7",
-        "to": "b8",
-        "promotion": "q"
-      }
-    ]
-  },
-  {
-    "id": "promo-c8q",
-    "title": "เดินเบี้ย c8=ควีน",
-    "theme": "promotion",
-    "themeLabel": "เดินเบี้ย",
-    "difficulty": "medium",
-    "icon": "♙",
-    "fen": "8/2P5/8/8/8/8/8/4K2k w - - 0 1",
-    "prompt": "ขาวเดิน — เดินเบี้ยชนะ",
-    "hint": "c7→c8=q",
-    "solution": [
-      {
-        "from": "c7",
-        "to": "c8",
-        "promotion": "q"
-      }
-    ]
-  },
-  {
-    "id": "promo-d8q",
-    "title": "เดินเบี้ย d8=ควีน",
-    "theme": "promotion",
-    "themeLabel": "เดินเบี้ย",
-    "difficulty": "medium",
-    "icon": "♙",
-    "fen": "8/3P4/8/8/8/8/8/4K2k w - - 0 1",
-    "prompt": "ขาวเดิน — เดินเบี้ยชนะ",
-    "hint": "d7→d8=q",
-    "solution": [
-      {
-        "from": "d7",
-        "to": "d8",
-        "promotion": "q"
-      }
-    ]
-  },
-  {
-    "id": "promo-g8n",
-    "title": "เดินเบี้ย g8=ม้า",
-    "theme": "promotion",
-    "themeLabel": "เดินเบี้ย",
-    "difficulty": "medium",
-    "icon": "♙",
-    "fen": "8/6P1/8/8/8/8/8/4K2k w - - 0 1",
-    "prompt": "ขาวเดิน — เดินเบี้ยชนะ",
-    "hint": "g7→g8=n",
-    "solution": [
-      {
-        "from": "g7",
-        "to": "g8",
-        "promotion": "n"
-      }
-    ]
-  },
-  {
-    "id": "mate2-queen-f8",
-    "title": "รุมฆาตควีน 2 ตา",
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/4Q1K1 w - - 0 1",
-    "hint": "Qe7+ แล้ว Qf8#",
-    "solution": [
-      {
-        "from": "e1",
-        "to": "e7"
-      },
-      {
-        "from": "g8",
         "to": "h8"
-      },
+      }
+    ]
+  },
+  {
+    "id": "lz-01rqs",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "easy",
+    "icon": "♛",
+    "fen": "r5k1/1q2Rp2/p5rp/1p1b2p1/5n2/8/PQ4PP/4R1K1 w - - 4 36",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
       {
         "from": "e7",
         "to": "e8"
-      }
-    ],
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "prompt": "ขาวเดิน — รุมฆาตใน 2 ตา"
-  },
-  {
-    "id": "mate-r-e2-e8",
-    "title": "e3→e8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♟️",
-    "fen": "6k1/5ppp/8/8/8/4R3/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "e3→e8",
-    "solution": [
+      },
       {
-        "from": "e3",
+        "from": "a8",
         "to": "e8"
-      }
-    ]
-  },
-  {
-    "id": "mate-q-d5-d8",
-    "title": "ควีน d5→d8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/3Q4/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "d5→d8",
-    "solution": [
-      {
-        "from": "d5",
-        "to": "d8"
-      }
-    ]
-  },
-  {
-    "id": "mate-q-a5-a8",
-    "title": "ควีน a5→a8#",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/Q7/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "a5→a8",
-    "solution": [
-      {
-        "from": "a5",
-        "to": "a8"
-      }
-    ]
-  },
-  {
-    "id": "mate2-queen-d8",
-    "title": "รุมฆาตควีน 2 ตา (d8)",
-    "theme": "mate",
-    "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/4Q1K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาตใน 2 ตา",
-    "hint": "Qe7+ แล้ว Qd8#",
-    "solution": [
+      },
       {
         "from": "e1",
-        "to": "e7"
+        "to": "e8"
       },
       {
         "from": "g8",
-        "to": "h8"
+        "to": "h7"
       },
       {
-        "from": "e7",
-        "to": "d8"
+        "from": "b2",
+        "to": "h8"
       }
     ]
   },
   {
-    "id": "fork-qe6",
-    "title": "ควีนส้อม e6",
-    "theme": "fork",
-    "themeLabel": "ส้อม",
+    "id": "lz-01tz5",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
     "difficulty": "medium",
-    "icon": "♕",
-    "fen": "4k3/8/4r3/8/8/4Q3/8/4K3 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "Qe6 ส้อมคิงกับเรือ",
+    "icon": "♛",
+    "fen": "1r4r1/2q2ppk/2pb1n2/1p2pN1p/4P3/4Q1RP/PP3PP1/R5K1 w - - 0 26",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
     "solution": [
+      {
+        "from": "g3",
+        "to": "g7"
+      },
+      {
+        "from": "g8",
+        "to": "g7"
+      },
       {
         "from": "e3",
-        "to": "e6"
-      }
-    ]
-  },
-  {
-    "id": "promo-a8q",
-    "title": "เดินเบี้ย a8=ควีน",
-    "theme": "promotion",
-    "themeLabel": "เดินเบี้ย",
-    "difficulty": "easy",
-    "icon": "♙",
-    "fen": "8/P7/8/8/8/8/8/4K2k w - - 0 1",
-    "prompt": "ขาวเดิน — เดินเบี้ยแล้วชนะ",
-    "hint": "a8=ควีน",
-    "solution": [
+        "to": "h6"
+      },
       {
-        "from": "a7",
-        "to": "a8",
-        "promotion": "q"
-      }
-    ]
-  },
-  {
-    "id": "promo-g6-g7",
-    "title": "เดินเบี้ย g7",
-    "theme": "promotion",
-    "themeLabel": "เดินเบี้ย",
-    "difficulty": "easy",
-    "icon": "♙",
-    "fen": "8/8/6P1/8/8/8/8/4K2k w - - 0 1",
-    "prompt": "ขาวเดิน — เดินเบี้ยชนะ",
-    "hint": "g6-g7",
-    "solution": [
+        "from": "h7",
+        "to": "g8"
+      },
       {
-        "from": "g6",
+        "from": "h6",
         "to": "g7"
       }
     ]
   },
   {
-    "id": "mate2-queen-d7",
-    "title": "รุมฆาตควีน 2 ตา (d7)",
+    "id": "lz-02lqe",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "easy",
+    "icon": "♛",
+    "fen": "6k1/5ppp/R2r4/p3r3/8/1P4P1/5P1P/6K1 w - - 0 25",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "a6",
+        "to": "a8"
+      },
+      {
+        "from": "d6",
+        "to": "d8"
+      },
+      {
+        "from": "a8",
+        "to": "d8"
+      },
+      {
+        "from": "e5",
+        "to": "e8"
+      },
+      {
+        "from": "d8",
+        "to": "e8"
+      }
+    ]
+  },
+  {
+    "id": "lz-02nth",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "easy",
+    "icon": "♛",
+    "fen": "3r4/pQ2pkbp/2n3p1/2q3B1/8/P4N2/1P3PPP/2R3K1 b - - 1 24",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "c5",
+        "to": "c1"
+      },
+      {
+        "from": "g5",
+        "to": "c1"
+      },
+      {
+        "from": "d8",
+        "to": "d1"
+      },
+      {
+        "from": "f3",
+        "to": "e1"
+      },
+      {
+        "from": "d1",
+        "to": "e1"
+      }
+    ]
+  },
+  {
+    "id": "lz-03lxp",
+    "title": "รุมฆาตใน 3 ตา",
     "theme": "mate",
     "themeLabel": "รุมฆาต",
     "difficulty": "medium",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/8/8/5PPP/3Q2K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาตใน 2 ตา",
-    "hint": "Qd7+ แล้ว Qd8#",
+    "icon": "♛",
+    "fen": "r5k1/ppb3p1/2pq2r1/3P1Q2/4p3/1P2P1PP/PB3P2/2R2RK1 b - - 0 27",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
     "solution": [
       {
+        "from": "g6",
+        "to": "g3"
+      },
+      {
+        "from": "f2",
+        "to": "g3"
+      },
+      {
+        "from": "d6",
+        "to": "g3"
+      },
+      {
+        "from": "g1",
+        "to": "h1"
+      },
+      {
+        "from": "g3",
+        "to": "h2"
+      }
+    ]
+  },
+  {
+    "id": "lz-03nve",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "easy",
+    "icon": "♛",
+    "fen": "4r1k1/1Q3ppp/p4q2/2Rp4/3Pr3/6P1/PP3PP1/3R2K1 b - - 0 23",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "e4",
+        "to": "e1"
+      },
+      {
         "from": "d1",
-        "to": "d7"
+        "to": "e1"
+      },
+      {
+        "from": "e8",
+        "to": "e1"
+      },
+      {
+        "from": "g1",
+        "to": "h2"
+      },
+      {
+        "from": "f6",
+        "to": "h6"
+      }
+    ]
+  },
+  {
+    "id": "lz-03q6i",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "r5k1/2p2ppp/1q6/2p1P3/8/5QB1/r4PPP/R5K1 w - - 0 28",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "f3",
+        "to": "a8"
+      },
+      {
+        "from": "a2",
+        "to": "a8"
+      },
+      {
+        "from": "a1",
+        "to": "a8"
+      },
+      {
+        "from": "b6",
+        "to": "b8"
+      },
+      {
+        "from": "a8",
+        "to": "b8"
+      }
+    ]
+  },
+  {
+    "id": "lz-03qmx",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "easy",
+    "icon": "♛",
+    "fen": "7k/p4R2/3Q3p/2p5/8/8/PPP3rP/1K6 b - - 0 39",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g2",
+        "to": "g1"
+      },
+      {
+        "from": "f7",
+        "to": "f1"
+      },
+      {
+        "from": "g1",
+        "to": "f1"
+      },
+      {
+        "from": "d6",
+        "to": "d1"
+      },
+      {
+        "from": "f1",
+        "to": "d1"
+      }
+    ]
+  },
+  {
+    "id": "lz-03det",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "r2q1b1r/pp3Qpk/8/3P1n1p/2Pn1PP1/N2p2P1/PP6/R1B1K2R w KQ - 0 18",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "h1",
+        "to": "h5"
+      },
+      {
+        "from": "f5",
+        "to": "h6"
+      },
+      {
+        "from": "h5",
+        "to": "h6"
+      },
+      {
+        "from": "h7",
+        "to": "h6"
+      },
+      {
+        "from": "f7",
+        "to": "h5"
+      }
+    ]
+  },
+  {
+    "id": "lz-03qfy",
+    "title": "รุมฆาตใน 3 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "1k1r3r/ppp2p2/6p1/4P3/8/1P3B2/P2PRqPP/R2Q3K b - - 3 21",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 3 ตา",
+    "hint": "ชนะใน 3 ตาของคุณ",
+    "solution": [
+      {
+        "from": "h8",
+        "to": "h2"
+      },
+      {
+        "from": "h1",
+        "to": "h2"
+      },
+      {
+        "from": "d8",
+        "to": "h8"
+      },
+      {
+        "from": "f3",
+        "to": "h5"
+      },
+      {
+        "from": "h8",
+        "to": "h5"
+      }
+    ]
+  },
+  {
+    "id": "lz-07llu",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "4r3/6k1/6p1/3p1p2/1p4n1/1P1BbK2/2P1R1P1/R7 b - - 1 35",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g4",
+        "to": "h2"
+      },
+      {
+        "from": "f3",
+        "to": "g3"
+      },
+      {
+        "from": "f5",
+        "to": "f4"
+      },
+      {
+        "from": "g3",
+        "to": "h4"
+      },
+      {
+        "from": "e8",
+        "to": "h8"
+      },
+      {
+        "from": "h4",
+        "to": "g5"
+      },
+      {
+        "from": "h8",
+        "to": "h5"
+      }
+    ]
+  },
+  {
+    "id": "lz-09oqd",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "1k4rr/pp1R1p2/2p5/4p1p1/2P1Pn2/1P3Pq1/P2Q2B1/3R1K2 w - - 0 31",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "d2",
+        "to": "d6"
+      },
+      {
+        "from": "b8",
+        "to": "a8"
+      },
+      {
+        "from": "d7",
+        "to": "d8"
+      },
+      {
+        "from": "g8",
+        "to": "d8"
+      },
+      {
+        "from": "d6",
+        "to": "d8"
+      },
+      {
+        "from": "h8",
+        "to": "d8"
+      },
+      {
+        "from": "d1",
+        "to": "d8"
+      }
+    ]
+  },
+  {
+    "id": "lz-0b6rf",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "8/8/1P6/6Rp/6b1/6k1/5p2/5K2 b - - 0 51",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g3",
+        "to": "f3"
+      },
+      {
+        "from": "g5",
+        "to": "g4"
+      },
+      {
+        "from": "h5",
+        "to": "g4"
+      },
+      {
+        "from": "b6",
+        "to": "b7"
+      },
+      {
+        "from": "g4",
+        "to": "g3"
+      },
+      {
+        "from": "b7",
+        "to": "b8",
+        "promotion": "q"
+      },
+      {
+        "from": "g3",
+        "to": "g2"
+      }
+    ]
+  },
+  {
+    "id": "lz-0dp6z",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "4Q3/4Np1k/4p2p/p2pP1pK/4nP2/1P3NP1/P1q4P/5b2 b - - 1 36",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "c2",
+        "to": "h2"
+      },
+      {
+        "from": "f3",
+        "to": "h2"
+      },
+      {
+        "from": "f1",
+        "to": "e2"
+      },
+      {
+        "from": "h2",
+        "to": "f3"
+      },
+      {
+        "from": "e2",
+        "to": "f3"
+      },
+      {
+        "from": "g3",
+        "to": "g4"
+      },
+      {
+        "from": "e4",
+        "to": "g3"
+      }
+    ]
+  },
+  {
+    "id": "lz-0fakv",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "rnb2r1k/ppRpNnpp/1b6/4P1N1/8/8/Pq1BK1PP/5B1R w - - 0 16",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g5",
+        "to": "f7"
+      },
+      {
+        "from": "f8",
+        "to": "f7"
+      },
+      {
+        "from": "c7",
+        "to": "c8"
+      },
+      {
+        "from": "b6",
+        "to": "d8"
+      },
+      {
+        "from": "c8",
+        "to": "d8"
+      },
+      {
+        "from": "f7",
+        "to": "f8"
+      },
+      {
+        "from": "d8",
+        "to": "f8"
+      }
+    ]
+  },
+  {
+    "id": "lz-0feiq",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "1k4r1/pp6/1q1p3r/5R2/8/1Q3PP1/PPP2PK1/3R4 b - - 4 23",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "h6",
+        "to": "h2"
+      },
+      {
+        "from": "g2",
+        "to": "h2"
+      },
+      {
+        "from": "b6",
+        "to": "f2"
+      },
+      {
+        "from": "h2",
+        "to": "h1"
       },
       {
         "from": "g8",
         "to": "h8"
       },
       {
+        "from": "f5",
+        "to": "h5"
+      },
+      {
+        "from": "h8",
+        "to": "h5"
+      }
+    ]
+  },
+  {
+    "id": "lz-0jbd0",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "5R2/pp1b2pk/1q2p3/3pN3/1n1P4/4Q3/PK4PP/7R b - - 0 24",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "b4",
+        "to": "d3"
+      },
+      {
+        "from": "b2",
+        "to": "c2"
+      },
+      {
+        "from": "b6",
+        "to": "b2"
+      },
+      {
+        "from": "c2",
+        "to": "d3"
+      },
+      {
         "from": "d7",
+        "to": "b5"
+      },
+      {
+        "from": "e5",
+        "to": "c4"
+      },
+      {
+        "from": "b5",
+        "to": "c4"
+      }
+    ]
+  },
+  {
+    "id": "lz-0n2rv",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "r1b2rk1/1p1n3p/2pbpq2/p2p2p1/2PPP3/1P2P1p1/PBQ1N1BP/R2RN1K1 b - - 0 19",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g3",
+        "to": "h2"
+      },
+      {
+        "from": "g1",
+        "to": "h1"
+      },
+      {
+        "from": "f6",
+        "to": "f1"
+      },
+      {
+        "from": "g2",
+        "to": "f1"
+      },
+      {
+        "from": "f8",
+        "to": "f1"
+      },
+      {
+        "from": "e2",
+        "to": "g1"
+      },
+      {
+        "from": "f1",
+        "to": "g1"
+      }
+    ]
+  },
+  {
+    "id": "lz-0co5v",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "5rk1/pp5p/1q2pP2/3p4/1P6/P4Q1B/4b1KP/8 w - - 0 27",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "f3",
+        "to": "g3"
+      },
+      {
+        "from": "e2",
+        "to": "g4"
+      },
+      {
+        "from": "g3",
+        "to": "g4"
+      },
+      {
+        "from": "g8",
+        "to": "f7"
+      },
+      {
+        "from": "g4",
+        "to": "g7"
+      },
+      {
+        "from": "f7",
+        "to": "e8"
+      },
+      {
+        "from": "g7",
+        "to": "e7"
+      }
+    ]
+  },
+  {
+    "id": "lz-09moz",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "5rk1/1p2pp1p/6p1/3Pq3/p2NP3/P2Q1Rb1/B5P1/7K b - - 3 29",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "e5",
+        "to": "h5"
+      },
+      {
+        "from": "h1",
+        "to": "g1"
+      },
+      {
+        "from": "h5",
+        "to": "h2"
+      },
+      {
+        "from": "g1",
+        "to": "f1"
+      },
+      {
+        "from": "h2",
+        "to": "h1"
+      },
+      {
+        "from": "f1",
+        "to": "e2"
+      },
+      {
+        "from": "h1",
+        "to": "e1"
+      }
+    ]
+  },
+  {
+    "id": "lz-0cg8j",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "4r2r/2R1pk2/b2p1p2/3P1P2/3PQ1P1/6KB/3q4/4R3 b - - 12 35",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "h8",
+        "to": "h3"
+      },
+      {
+        "from": "g3",
+        "to": "h3"
+      },
+      {
+        "from": "e8",
+        "to": "h8"
+      },
+      {
+        "from": "h3",
+        "to": "g3"
+      },
+      {
+        "from": "d2",
+        "to": "h2"
+      },
+      {
+        "from": "g3",
+        "to": "f3"
+      },
+      {
+        "from": "h8",
+        "to": "h3"
+      }
+    ]
+  },
+  {
+    "id": "lz-0hsue",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "7k/6p1/5bPp/3Qq2P/8/8/2q2PK1/8 w - - 1 44",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "d5",
+        "to": "a8"
+      },
+      {
+        "from": "c2",
+        "to": "c8"
+      },
+      {
+        "from": "a8",
+        "to": "c8"
+      },
+      {
+        "from": "f6",
+        "to": "d8"
+      },
+      {
+        "from": "c8",
+        "to": "d8"
+      },
+      {
+        "from": "e5",
+        "to": "e8"
+      },
+      {
+        "from": "d8",
+        "to": "e8"
+      }
+    ]
+  },
+  {
+    "id": "lz-0nuct",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "1r3rk1/pp3p1p/3pBQpP/2p1q3/7P/8/5R2/6K1 w - - 6 31",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "e6",
+        "to": "f7"
+      },
+      {
+        "from": "f8",
+        "to": "f7"
+      },
+      {
+        "from": "f6",
+        "to": "f7"
+      },
+      {
+        "from": "g8",
+        "to": "h8"
+      },
+      {
+        "from": "f7",
+        "to": "f8"
+      },
+      {
+        "from": "b8",
+        "to": "f8"
+      },
+      {
+        "from": "f2",
+        "to": "f8"
+      }
+    ]
+  },
+  {
+    "id": "lz-010mj",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "3r2k1/pR3pp1/8/5p1p/5q2/5n2/PP4R1/6QK w - - 0 30",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g2",
+        "to": "g7"
+      },
+      {
+        "from": "g8",
+        "to": "h8"
+      },
+      {
+        "from": "g7",
+        "to": "h7"
+      },
+      {
+        "from": "h8",
+        "to": "h7"
+      },
+      {
+        "from": "b7",
+        "to": "f7"
+      },
+      {
+        "from": "h7",
+        "to": "h8"
+      },
+      {
+        "from": "g1",
+        "to": "g7"
+      }
+    ]
+  },
+  {
+    "id": "lz-0263h",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "1r3rk1/ppp2pp1/8/8/1nP5/1P5R/PbBq1PPP/1Q4K1 w - - 2 21",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "c2",
+        "to": "h7"
+      },
+      {
+        "from": "g8",
+        "to": "h8"
+      },
+      {
+        "from": "h7",
+        "to": "g8"
+      },
+      {
+        "from": "d2",
+        "to": "h6"
+      },
+      {
+        "from": "h3",
+        "to": "h6"
+      },
+      {
+        "from": "g7",
+        "to": "h6"
+      },
+      {
+        "from": "b1",
+        "to": "h7"
+      }
+    ]
+  },
+  {
+    "id": "lz-0339n",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "easy",
+    "icon": "♛",
+    "fen": "6k1/p3rppp/1n2p3/3q4/8/P1Q1PP2/6PP/2R3K1 w - - 0 27",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "c3",
+        "to": "c8"
+      },
+      {
+        "from": "b6",
+        "to": "c8"
+      },
+      {
+        "from": "c1",
+        "to": "c8"
+      },
+      {
+        "from": "d5",
+        "to": "d8"
+      },
+      {
+        "from": "c8",
+        "to": "d8"
+      },
+      {
+        "from": "e7",
+        "to": "e8"
+      },
+      {
+        "from": "d8",
+        "to": "e8"
+      }
+    ]
+  },
+  {
+    "id": "lz-03i6j",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "r2q3k/4bBpp/p7/1pp2P2/3nn3/2P4Q/PP4PP/R1B2RK1 b - - 0 19",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "d4",
+        "to": "e2"
+      },
+      {
+        "from": "g1",
+        "to": "h1"
+      },
+      {
+        "from": "e4",
+        "to": "f2"
+      },
+      {
+        "from": "f1",
+        "to": "f2"
+      },
+      {
+        "from": "d8",
+        "to": "d1"
+      },
+      {
+        "from": "f2",
+        "to": "f1"
+      },
+      {
+        "from": "d1",
+        "to": "f1"
+      }
+    ]
+  },
+  {
+    "id": "lz-0czhd",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "5rk1/1pQ2ppp/p1b1p3/8/6n1/2P1q3/P3BRPP/3RK3 w - - 6 25",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "c7",
+        "to": "f7"
+      },
+      {
+        "from": "f8",
+        "to": "f7"
+      },
+      {
+        "from": "d1",
+        "to": "d8"
+      },
+      {
+        "from": "c6",
+        "to": "e8"
+      },
+      {
+        "from": "d8",
+        "to": "e8"
+      },
+      {
+        "from": "f7",
+        "to": "f8"
+      },
+      {
+        "from": "f2",
+        "to": "f8"
+      }
+    ]
+  },
+  {
+    "id": "lz-0dbeb",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "Q2R4/8/5pp1/8/3b1q1p/3k2PP/5P1K/8 b - - 0 42",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "f4",
+        "to": "f2"
+      },
+      {
+        "from": "a8",
+        "to": "g2"
+      },
+      {
+        "from": "h4",
+        "to": "g3"
+      },
+      {
+        "from": "h2",
+        "to": "h1"
+      },
+      {
+        "from": "f2",
+        "to": "e1"
+      },
+      {
+        "from": "g2",
+        "to": "f1"
+      },
+      {
+        "from": "e1",
+        "to": "f1"
+      }
+    ]
+  },
+  {
+    "id": "lz-0ehia",
+    "title": "รุมฆาตใน 4 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "2R2R2/2p1r2k/pr5p/2p1N1p1/3pP1P1/nP1P2K1/2P5/8 w - - 14 43",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 4 ตา",
+    "hint": "ชนะใน 4 ตาของคุณ",
+    "solution": [
+      {
+        "from": "f8",
+        "to": "h8"
+      },
+      {
+        "from": "h7",
+        "to": "g7"
+      },
+      {
+        "from": "c8",
+        "to": "g8"
+      },
+      {
+        "from": "g7",
+        "to": "f6"
+      },
+      {
+        "from": "h8",
+        "to": "h6"
+      },
+      {
+        "from": "f6",
+        "to": "e5"
+      },
+      {
+        "from": "g8",
+        "to": "g5"
+      }
+    ]
+  },
+  {
+    "id": "lz-07oug",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "1k4r1/2p5/1p5b/1P1NPrqp/2bP4/5Q1K/2P2R2/R7 w - - 0 34",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "a1",
+        "to": "a8"
+      },
+      {
+        "from": "b8",
+        "to": "a8"
+      },
+      {
+        "from": "d5",
+        "to": "b6"
+      },
+      {
+        "from": "a8",
+        "to": "a7"
+      },
+      {
+        "from": "f3",
+        "to": "a3"
+      },
+      {
+        "from": "a7",
+        "to": "b7"
+      },
+      {
+        "from": "a3",
+        "to": "a6"
+      },
+      {
+        "from": "b7",
+        "to": "b8"
+      },
+      {
+        "from": "a6",
+        "to": "a8"
+      }
+    ]
+  },
+  {
+    "id": "lz-07r2h",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "3q2k1/1Q2Ppb1/4n2p/2P3p1/8/P5P1/1P4BP/3R2K1 b - - 0 36",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "d8",
+        "to": "d1"
+      },
+      {
+        "from": "g2",
+        "to": "f1"
+      },
+      {
+        "from": "g7",
+        "to": "d4"
+      },
+      {
+        "from": "g1",
+        "to": "g2"
+      },
+      {
+        "from": "e6",
+        "to": "f4"
+      },
+      {
+        "from": "g3",
+        "to": "f4"
+      },
+      {
+        "from": "d1",
+        "to": "g4"
+      },
+      {
+        "from": "g2",
+        "to": "h1"
+      },
+      {
+        "from": "g4",
+        "to": "g1"
+      }
+    ]
+  },
+  {
+    "id": "lz-051yj",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "medium",
+    "icon": "♛",
+    "fen": "7k/pp2q1p1/1n2p1B1/1b3pp1/1n1P3P/8/PP1K1PP1/1Q5R w - - 0 25",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "h4",
+        "to": "g5"
+      },
+      {
+        "from": "h8",
+        "to": "g8"
+      },
+      {
+        "from": "h1",
+        "to": "h8"
+      },
+      {
+        "from": "g8",
+        "to": "h8"
+      },
+      {
+        "from": "b1",
+        "to": "h1"
+      },
+      {
+        "from": "h8",
+        "to": "g8"
+      },
+      {
+        "from": "h1",
+        "to": "h7"
+      },
+      {
+        "from": "g8",
+        "to": "f8"
+      },
+      {
+        "from": "h7",
+        "to": "h8"
+      }
+    ]
+  },
+  {
+    "id": "lz-0atul",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "8/pp2k3/2n5/2p1P1N1/4N1n1/2P5/Pr5r/3K1R2 w - - 0 34",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "f1",
+        "to": "f7"
+      },
+      {
+        "from": "e7",
+        "to": "d8"
+      },
+      {
+        "from": "g5",
+        "to": "e6"
+      },
+      {
+        "from": "d8",
+        "to": "c8"
+      },
+      {
+        "from": "e4",
+        "to": "d6"
+      },
+      {
+        "from": "c8",
+        "to": "b8"
+      },
+      {
+        "from": "f7",
+        "to": "f8"
+      },
+      {
+        "from": "c6",
+        "to": "d8"
+      },
+      {
+        "from": "f8",
         "to": "d8"
       }
     ]
   },
   {
-    "id": "mate-q-c5-c8",
-    "title": "ควีน c5→c8#",
+    "id": "lz-0cyaa",
+    "title": "รุมฆาตใน 5 ตา",
     "theme": "mate",
     "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/2Q5/8/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "c5→c8",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "2r2r1k/2q1b1pp/4Q3/3pp1P1/1p1pP3/1P1P4/1PP2PK1/2B4R w - - 4 28",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
     "solution": [
       {
-        "from": "c5",
-        "to": "c8"
+        "from": "h1",
+        "to": "h7"
+      },
+      {
+        "from": "h8",
+        "to": "h7"
+      },
+      {
+        "from": "g5",
+        "to": "g6"
+      },
+      {
+        "from": "h7",
+        "to": "h8"
+      },
+      {
+        "from": "e6",
+        "to": "h3"
+      },
+      {
+        "from": "e7",
+        "to": "h4"
+      },
+      {
+        "from": "h3",
+        "to": "h4"
+      },
+      {
+        "from": "h8",
+        "to": "g8"
+      },
+      {
+        "from": "h4",
+        "to": "h7"
       }
     ]
   },
   {
-    "id": "mate-q-e4-e8",
-    "title": "ควีน e4→e8#",
+    "id": "lz-0m5ln",
+    "title": "รุมฆาตใน 5 ตา",
     "theme": "mate",
     "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/4Q3/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "e4→e8",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "2rk2r1/1R3p2/2R1p3/3pP3/Q1pP1q1p/2P1nN1P/5BP1/6K1 b - - 0 27",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
     "solution": [
+      {
+        "from": "g8",
+        "to": "g2"
+      },
+      {
+        "from": "g1",
+        "to": "h1"
+      },
+      {
+        "from": "g2",
+        "to": "h2"
+      },
+      {
+        "from": "f3",
+        "to": "h2"
+      },
+      {
+        "from": "f4",
+        "to": "e4"
+      },
+      {
+        "from": "h2",
+        "to": "f3"
+      },
       {
         "from": "e4",
-        "to": "e8"
+        "to": "f3"
+      },
+      {
+        "from": "h1",
+        "to": "g1"
+      },
+      {
+        "from": "f3",
+        "to": "g2"
       }
     ]
   },
   {
-    "id": "mate-q-b4-b8",
-    "title": "ควีน b4→b8#",
+    "id": "lz-02iyq",
+    "title": "รุมฆาตใน 5 ตา",
     "theme": "mate",
     "themeLabel": "รุมฆาต",
-    "difficulty": "medium",
-    "icon": "♕",
-    "fen": "6k1/5ppp/8/8/1Q6/8/6PP/6K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "b4→b8",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "4r1k1/pp3p1p/q1p2np1/4P1Q1/8/1P1P3P/P3R1P1/7K w - - 0 29",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
     "solution": [
       {
-        "from": "b4",
-        "to": "b8"
-      }
-    ]
-  },
-  {
-    "id": "fork-nd7",
-    "title": "ม้าส้อม d7",
-    "theme": "fork",
-    "themeLabel": "ส้อม",
-    "difficulty": "medium",
-    "icon": "♞",
-    "fen": "4k3/8/3r4/8/3N4/8/8/4K3 w - - 0 1",
-    "prompt": "ขาวเดิน — ชนะหมาก",
-    "hint": "Nc6 ส้อมเรือกับคิง",
-    "solution": [
+        "from": "e5",
+        "to": "f6"
+      },
       {
-        "from": "d4",
-        "to": "c6"
-      }
-    ]
-  },
-  {
-    "id": "tactic-discovered-e8",
-    "title": "เรือ xe8# (เปิดลาย)",
-    "theme": "tactic",
-    "themeLabel": "แท็กติก",
-    "difficulty": "medium",
-    "icon": "♜",
-    "fen": "4r1k1/5ppp/5B2/8/8/8/5PPP/4R1K1 w - - 0 1",
-    "prompt": "ขาวเดิน — รุมฆาต",
-    "hint": "Rxe8#",
-    "solution": [
+        "from": "e8",
+        "to": "e2"
+      },
+      {
+        "from": "g5",
+        "to": "h6"
+      },
+      {
+        "from": "e2",
+        "to": "e1"
+      },
+      {
+        "from": "h1",
+        "to": "h2"
+      },
       {
         "from": "e1",
-        "to": "e8"
+        "to": "h1"
+      },
+      {
+        "from": "h2",
+        "to": "h1"
+      },
+      {
+        "from": "c6",
+        "to": "c5"
+      },
+      {
+        "from": "h6",
+        "to": "g7"
+      }
+    ]
+  },
+  {
+    "id": "lz-0gayy",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "3q2rk/1b3Rr1/8/2p5/2BP3P/2P3P1/P4P1K/2Q4R b - - 2 33",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "d8",
+        "to": "h4"
+      },
+      {
+        "from": "g3",
+        "to": "h4"
+      },
+      {
+        "from": "g7",
+        "to": "g2"
+      },
+      {
+        "from": "h2",
+        "to": "h3"
+      },
+      {
+        "from": "b7",
+        "to": "c8"
+      },
+      {
+        "from": "f7",
+        "to": "d7"
+      },
+      {
+        "from": "c8",
+        "to": "d7"
+      },
+      {
+        "from": "c4",
+        "to": "e6"
+      },
+      {
+        "from": "d7",
+        "to": "e6"
+      }
+    ]
+  },
+  {
+    "id": "lz-08tul",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "Qnbq1rk1/p4ppp/8/1B6/4p1n1/2N2N2/PPPP2PP/R1BQ2KR b - - 2 10",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "d8",
+        "to": "b6"
+      },
+      {
+        "from": "d2",
+        "to": "d4"
+      },
+      {
+        "from": "e4",
+        "to": "d3"
+      },
+      {
+        "from": "f3",
+        "to": "d4"
+      },
+      {
+        "from": "b6",
+        "to": "d4"
+      },
+      {
+        "from": "c1",
+        "to": "e3"
+      },
+      {
+        "from": "d4",
+        "to": "e3"
+      },
+      {
+        "from": "g1",
+        "to": "f1"
+      },
+      {
+        "from": "e3",
+        "to": "f2"
+      }
+    ]
+  },
+  {
+    "id": "lz-0a05m",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "5rk1/pp4p1/7p/3pp2Q/P2P4/3bq2N/1P1N1bPP/R1BK3R b - - 0 21",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "f8",
+        "to": "c8"
+      },
+      {
+        "from": "d2",
+        "to": "c4"
+      },
+      {
+        "from": "d3",
+        "to": "c2"
+      },
+      {
+        "from": "d1",
+        "to": "c2"
+      },
+      {
+        "from": "c8",
+        "to": "c4"
+      },
+      {
+        "from": "c2",
+        "to": "b1"
+      },
+      {
+        "from": "e3",
+        "to": "d3"
+      },
+      {
+        "from": "b1",
+        "to": "a2"
+      },
+      {
+        "from": "c4",
+        "to": "a4"
+      }
+    ]
+  },
+  {
+    "id": "lz-0a8qq",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "r2q1b1r/pp1n1k2/2pQ3p/4P1pn/6b1/2N2NP1/PPP5/R1B2RK1 w - - 0 16",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "f3",
+        "to": "g5"
+      },
+      {
+        "from": "f7",
+        "to": "g7"
+      },
+      {
+        "from": "f1",
+        "to": "f7"
+      },
+      {
+        "from": "g7",
+        "to": "g8"
+      },
+      {
+        "from": "d6",
+        "to": "g6"
+      },
+      {
+        "from": "h5",
+        "to": "g7"
+      },
+      {
+        "from": "f7",
+        "to": "g7"
+      },
+      {
+        "from": "f8",
+        "to": "g7"
+      },
+      {
+        "from": "g6",
+        "to": "f7"
+      }
+    ]
+  },
+  {
+    "id": "lz-0abz9",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "r2q1k1r/p4Pp1/b1p5/2b1N3/2p5/3PB1p1/PPP1Q1P1/R3R1K1 b - - 3 18",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "h8",
+        "to": "h1"
+      },
+      {
+        "from": "g1",
+        "to": "h1"
+      },
+      {
+        "from": "d8",
+        "to": "h4"
+      },
+      {
+        "from": "h1",
+        "to": "g1"
+      },
+      {
+        "from": "h4",
+        "to": "h2"
+      },
+      {
+        "from": "g1",
+        "to": "f1"
+      },
+      {
+        "from": "h2",
+        "to": "h1"
+      },
+      {
+        "from": "e3",
+        "to": "g1"
+      },
+      {
+        "from": "h1",
+        "to": "g1"
+      }
+    ]
+  },
+  {
+    "id": "lz-0fvld",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "2kr3r/ppp2p2/2n5/2Pp2p1/1P1P2n1/4PPPq/1P2N1NP/R1BQR1K1 b - - 0 18",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "h3",
+        "to": "h2"
+      },
+      {
+        "from": "g1",
+        "to": "f1"
+      },
+      {
+        "from": "h2",
+        "to": "h1"
+      },
+      {
+        "from": "e2",
+        "to": "g1"
+      },
+      {
+        "from": "h1",
+        "to": "g2"
+      },
+      {
+        "from": "f1",
+        "to": "g2"
+      },
+      {
+        "from": "h8",
+        "to": "h2"
+      },
+      {
+        "from": "g2",
+        "to": "f1"
+      },
+      {
+        "from": "h2",
+        "to": "f2"
+      }
+    ]
+  },
+  {
+    "id": "lz-0hlaq",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "3r1rk1/pbp1qppp/1p2pb2/8/2PB2Q1/5P1N/PP2KP1P/3R2R1 w - - 7 20",
+    "prompt": "ขาวเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g4",
+        "to": "g7"
+      },
+      {
+        "from": "f6",
+        "to": "g7"
+      },
+      {
+        "from": "g1",
+        "to": "g7"
+      },
+      {
+        "from": "g8",
+        "to": "h8"
+      },
+      {
+        "from": "g7",
+        "to": "g8"
+      },
+      {
+        "from": "h8",
+        "to": "g8"
+      },
+      {
+        "from": "d1",
+        "to": "g1"
+      },
+      {
+        "from": "e7",
+        "to": "g5"
+      },
+      {
+        "from": "g1",
+        "to": "g5"
+      }
+    ]
+  },
+  {
+    "id": "lz-0hdh1",
+    "title": "รุมฆาตใน 5 ตา",
+    "theme": "mate",
+    "themeLabel": "รุมฆาต",
+    "difficulty": "hard",
+    "icon": "♛",
+    "fen": "5r1k/6p1/2QBB2p/3Pb1q1/4p3/4P1P1/1P5P/2R3K1 b - - 0 35",
+    "prompt": "ดำเดิน — หาลำดับที่ดีที่สุด 5 ตา",
+    "hint": "ชนะใน 5 ตาของคุณ",
+    "solution": [
+      {
+        "from": "g5",
+        "to": "e3"
+      },
+      {
+        "from": "g1",
+        "to": "g2"
+      },
+      {
+        "from": "f8",
+        "to": "f2"
+      },
+      {
+        "from": "g2",
+        "to": "h3"
+      },
+      {
+        "from": "f2",
+        "to": "h2"
+      },
+      {
+        "from": "h3",
+        "to": "h2"
+      },
+      {
+        "from": "e3",
+        "to": "g3"
+      },
+      {
+        "from": "h2",
+        "to": "h1"
+      },
+      {
+        "from": "g3",
+        "to": "h2"
       }
     ]
   }

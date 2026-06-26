@@ -12,6 +12,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {Array<object>} */
 const BASE_PUZZLES = [];
 
+const MIN_PLAYER_PLIES = 3;
+const MAX_PLAYER_PLIES = 5;
+
+function playerPlies(puzzle) {
+  return Math.ceil(puzzle.solution.length / 2);
+}
+
 function requiresMate(puzzle) {
   if (puzzle.theme === "mate" || puzzle.theme === "sacrifice") return true;
   if (puzzle.prompt?.includes("รุมฆาต")) return true;
@@ -46,6 +53,13 @@ function validatePuzzle(puzzle) {
 
   if (requiresMate(puzzle) && !game.isCheckmate()) {
     throw new Error(`${puzzle.id}: solution does not end in checkmate`);
+  }
+
+  const plies = playerPlies(puzzle);
+  if (plies < MIN_PLAYER_PLIES || plies > MAX_PLAYER_PLIES) {
+    throw new Error(
+      `${puzzle.id}: need ${MIN_PLAYER_PLIES}-${MAX_PLAYER_PLIES} player moves, got ${plies}`
+    );
   }
 }
 

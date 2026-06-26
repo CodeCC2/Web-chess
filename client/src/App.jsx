@@ -519,7 +519,7 @@ export default function App() {
           ) : (
             <>
               <p className="tutorial-lobby-desc">
-                ฝึกแท็กติก — รุมฆาต ส้อม พิน และเดินเบี้ย หาตาที่ดีที่สุดในแต่ละตำแหน่ง
+                ฝึกแท็กติก — หาลำดับที่ดีที่สุด 3–5 ตา (รุมฆาตจริง ผ่าน validation ทุกข้อ)
               </p>
               <div className="row">
                 <button
