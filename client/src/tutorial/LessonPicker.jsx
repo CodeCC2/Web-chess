@@ -1,7 +1,8 @@
 import { useMemo } from "react";
+import ScreenHeader from "../ScreenHeader.jsx";
 import { lessons, getCompletedLessons } from "./lessons.js";
 
-export default function LessonPicker({ onSelect, onBack }) {
+export default function LessonPicker({ onSelect, onHome }) {
   const completed = useMemo(() => getCompletedLessons(), []);
 
   const mainLessons = lessons.filter((l) => l.kind === "main");
@@ -44,7 +45,7 @@ export default function LessonPicker({ onSelect, onBack }) {
 
   return (
     <div className="app lobby">
-      <h1>♞ สอนเปิดเกม</h1>
+      <ScreenHeader title="♞ สอนเปิดเกม" onHome={onHome} />
       <p className="subtitle">
         ระดับกลาง–แข็ง: 10–15+ ตา สายหลัก + สายรอง พร้อมแผนกลางเกม
       </p>
@@ -66,10 +67,6 @@ export default function LessonPicker({ onSelect, onBack }) {
           )}
         </div>
       </div>
-
-      <button className="back-btn" onClick={onBack}>
-        ← กลับเมนูหลัก
-      </button>
     </div>
   );
 }

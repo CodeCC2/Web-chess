@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import ScreenHeader from "../ScreenHeader.jsx";
 import {
   puzzles,
   getCompletedPuzzles,
@@ -6,7 +7,7 @@ import {
   DIFFICULTY_LABELS,
 } from "./puzzles.js";
 
-export default function PuzzlePicker({ onSelect, onRandom, onBack }) {
+export default function PuzzlePicker({ onSelect, onRandom, onHome }) {
   const completed = useMemo(() => getCompletedPuzzles(), []);
   const doneCount = completed.length;
 
@@ -46,7 +47,7 @@ export default function PuzzlePicker({ onSelect, onRandom, onBack }) {
 
   return (
     <div className="app lobby">
-      <h1>♞ Puzzle</h1>
+      <ScreenHeader title="♞ Puzzle" onHome={onHome} />
       <p className="subtitle">
         ฝึกแท็กติก — หาตาที่ดีที่สุด ({doneCount}/{puzzles.length} ผ่านแล้ว)
       </p>
@@ -55,7 +56,6 @@ export default function PuzzlePicker({ onSelect, onRandom, onBack }) {
         <button className="primary" onClick={onRandom}>
           สุ่ม Puzzle
         </button>
-        <button onClick={onBack}>กลับเมนู</button>
       </div>
 
       {[...byTheme.entries()].map(([theme, items]) => (

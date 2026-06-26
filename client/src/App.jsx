@@ -324,10 +324,7 @@ export default function App() {
     return (
       <PuzzleGame
         puzzle={activePuzzle}
-        onExit={() => {
-          setActivePuzzle(null);
-          setShowPuzzlePicker(false);
-        }}
+        onExit={goHome}
         onNext={handlePuzzleNext}
       />
     );
@@ -341,7 +338,7 @@ export default function App() {
           setShowPuzzlePicker(false);
         }}
         onRandom={pickRandomPuzzle}
-        onBack={() => setShowPuzzlePicker(false)}
+        onHome={goHome}
       />
     );
   }
@@ -350,10 +347,7 @@ export default function App() {
     return (
       <TutorialGame
         lesson={tutorialLesson}
-        onExit={() => {
-          setTutorialLesson(null);
-          setShowLessonPicker(false);
-        }}
+        onExit={goHome}
         onNextLesson={handleTutorialNext}
       />
     );
@@ -366,7 +360,7 @@ export default function App() {
           setTutorialLesson(lesson);
           setShowLessonPicker(false);
         }}
-        onBack={() => setShowLessonPicker(false)}
+        onHome={goHome}
       />
     );
   }
@@ -376,7 +370,7 @@ export default function App() {
       <LocalGame
         difficulty={botConfig.difficulty}
         playerColor={botConfig.playerColor}
-        onExit={() => setBotConfig(null)}
+        onExit={goHome}
       />
     );
   }
