@@ -4,6 +4,9 @@ import { Chessboard } from "react-chessboard";
 import { socket } from "./socket.js";
 import LocalGame from "./LocalGame.jsx";
 import MoveList from "./MoveList.jsx";
+import LessonPicker from "./tutorial/LessonPicker.jsx";
+import TutorialGame from "./tutorial/TutorialGame.jsx";
+import { lessons } from "./tutorial/lessons.js";
 import "./App.css";
 
 function randomRoomId() {
@@ -22,10 +25,14 @@ export default function App() {
   const [optionSquares, setOptionSquares] = useState({});
 
   // Lobby mode + single-player (vs computer) config.
-  const [lobbyMode, setLobbyMode] = useState("online"); // "online" | "bot"
+  const [lobbyMode, setLobbyMode] = useState("online"); // "online" | "bot" | "tutorial"
   const [difficulty, setDifficulty] = useState("medium");
   const [botColorChoice, setBotColorChoice] = useState("white"); // white | black | random
   const [botConfig, setBotConfig] = useState(null);
+
+  // Tutorial mode
+  const [tutorialLesson, setTutorialLesson] = useState(null);
+  const [showLessonPicker, setShowLessonPicker] = useState(false);
 
   const startBotGame = useCallback(() => {
     const playerColor =
@@ -239,6 +246,42 @@ export default function App() {
     return null;
   }, [state, color]);
 
+  const handleTutorialNext = useCallback(() => {
+    if (!tutorialLesson) return;
+    const idx = lessons.findIndex((l) => l.id === tutorialLesson.id);
+    if (idx >= 0 && idx + 1 < lessons.length) {
+      setTutorialLesson(lessons[idx + 1]);
+    } else {
+      setTutorialLesson(null);
+      setShowLessonPicker(true);
+    }
+  }, [tutorialLesson]);
+
+  if (tutorialLesson) {
+    return (
+      <TutorialGame
+        lesson={tutorialLesson}
+        onExit={() => {
+          setTutorialLesson(null);
+          setShowLessonPicker(false);
+        }}
+        onNextLesson={handleTutorialNext}
+      />
+    );
+  }
+
+  if (showLessonPicker) {
+    return (
+      <LessonPicker
+        onSelect={(lesson) => {
+          setTutorialLesson(lesson);
+          setShowLessonPicker(false);
+        }}
+        onBack={() => setShowLessonPicker(false)}
+      />
+    );
+  }
+
   if (botConfig) {
     return (
       <LocalGame
@@ -269,6 +312,12 @@ export default function App() {
               onClick={() => setLobbyMode("bot")}
             >
               vs Computer
+            </button>
+            <button
+              className={lobbyMode === "tutorial" ? "tab active" : "tab"}
+              onClick={() => setLobbyMode("tutorial")}
+            >
+              สอนเล่น
             </button>
           </div>
 
@@ -302,7 +351,7 @@ export default function App() {
                 Server: {connected ? "🟢 connected" : "🔴 connecting..."}
               </p>
             </>
-          ) : (
+          ) : lobbyMode === "bot" ? (
             <>
               <label>
                 Difficulty
@@ -337,6 +386,21 @@ export default function App() {
               <div className="row">
                 <button className="primary" onClick={startBotGame}>
                   Start game
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="tutorial-lobby-desc">
+                เรียนรู้การเดินหมากแต่ละตัว ตั้งแต่เบี้ย เรือ บิชอป ม้า ควีน คิง
+                ไปจนถึงรุกและรุกฆาต พร้อมคำแนะนำทีละขั้นตอน
+              </p>
+              <div className="row">
+                <button
+                  className="primary"
+                  onClick={() => setShowLessonPicker(true)}
+                >
+                  เลือกบทเรียน
                 </button>
               </div>
             </>
