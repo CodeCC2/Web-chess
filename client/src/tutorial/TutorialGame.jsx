@@ -27,6 +27,7 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
   const [wrongSquare, setWrongSquare] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [waitingOpponent, setWaitingOpponent] = useState(false);
+  const [lastOpponentSan, setLastOpponentSan] = useState(null);
   const [successFlash, setSuccessFlash] = useState(false);
 
   const steps = lesson.steps;
@@ -45,6 +46,7 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
       setShowHint(false);
       setWrongSquare(null);
       setWaitingOpponent(false);
+      setLastOpponentSan(null);
       setSuccessFlash(false);
     },
     [steps]
@@ -90,7 +92,7 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
   }, [stepIndex, totalSteps, lesson.id]);
 
   const playOpponentMove = useCallback(
-    (oppMove) => {
+    (oppMove, oppSan) => {
       setWaitingOpponent(true);
       setTimeout(() => {
         const game = gameRef.current;
@@ -101,6 +103,7 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
         }
         setFen(game.fen());
         setWaitingOpponent(false);
+        if (oppSan) setLastOpponentSan(oppSan);
         advanceStep();
       }, 500);
     },
@@ -143,7 +146,7 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
       setShowHint(false);
 
       if (currentStep.opponentMove) {
-        playOpponentMove(currentStep.opponentMove);
+        playOpponentMove(currentStep.opponentMove, currentStep.opponentSan);
       } else {
         advanceStep();
       }
@@ -239,9 +242,13 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
   return (
     <div className="app game">
       <header className="game-header">
-        <h1>♞ สอนเล่นหมากรุก</h1>
+        <h1>♞ สอนเปิดเกม</h1>
         <div className="room-badge">
-          {lesson.icon} <strong>{lesson.title}</strong>
+          {lesson.icon}{" "}
+          <strong>
+            {lesson.title}
+            {lesson.subtitle ? ` (${lesson.subtitle})` : ""}
+          </strong>
         </div>
       </header>
 
@@ -284,14 +291,27 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
             {completed ? (
               <>
                 <div className="tutorial-complete-icon">🎉</div>
-                <h3 className="tutorial-complete-title">บทเรียนสำเร็จ!</h3>
+                <h3 className="tutorial-complete-title">เรียนจบแล้ว!</h3>
+                {lesson.line && (
+                  <code className="lesson-line">{lesson.line}</code>
+                )}
                 <p className="tutorial-desc">{lesson.description}</p>
               </>
             ) : (
               <>
+                {currentStep.san && (
+                  <div className="tutorial-move-label">{currentStep.san}</div>
+                )}
                 <h3 className="tutorial-step-title">
-                  {waitingOpponent ? "รอฝ่ายตรงข้ามเดิน…" : "ทำตามคำแนะนำ"}
+                  {waitingOpponent
+                    ? "คู่ต่อสู้กำลังตอบ…"
+                    : "เดินตามแนวเปิดเกม"}
                 </h3>
+                {lastOpponentSan && stepIndex > 0 && !waitingOpponent && (
+                  <p className="tutorial-opponent-move">
+                    คู่ต่อสู้เล่น <strong>{lastOpponentSan}</strong>
+                  </p>
+                )}
                 <p className="tutorial-instruction-text">
                   {currentStep.instruction}
                 </p>

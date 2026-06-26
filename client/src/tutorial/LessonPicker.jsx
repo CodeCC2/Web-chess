@@ -6,9 +6,10 @@ export default function LessonPicker({ onSelect, onBack }) {
 
   return (
     <div className="app lobby">
-      <h1>♞ สอนเล่นหมากรุก</h1>
+      <h1>♞ สอนเปิดเกม</h1>
       <p className="subtitle">
-        เรียนรู้การเดินหมากแต่ละตัว พร้อมคำแนะนำทีละขั้นตอน
+        เรียนรู้การเปิดหมากยอดนิยม เช่น Ruy Lopez และ Queen&apos;s Gambit
+        พร้อมคำอธิบายแนวคิดทีละตา
       </p>
 
       <div className="lesson-list">
@@ -25,7 +26,18 @@ export default function LessonPicker({ onSelect, onBack }) {
                 <span className="lesson-number">บทที่ {index + 1}</span>
                 {done && <span className="lesson-done-badge">✓</span>}
               </div>
-              <h3 className="lesson-title">{lesson.title}</h3>
+              <h3 className="lesson-title">
+                {lesson.title}
+                {lesson.subtitle && (
+                  <span className="lesson-subtitle"> — {lesson.subtitle}</span>
+                )}
+              </h3>
+              {lesson.eco && (
+                <span className="lesson-eco">ECO {lesson.eco}</span>
+              )}
+              {lesson.line && (
+                <code className="lesson-line">{lesson.line}</code>
+              )}
               <p className="lesson-desc">{lesson.description}</p>
               <span className="lesson-steps">
                 {lesson.steps.length} ขั้นตอน

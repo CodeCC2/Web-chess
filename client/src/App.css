@@ -370,6 +370,53 @@ button.link {
   color: #e5e7eb;
 }
 
+.lesson-subtitle {
+  font-weight: 400;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.lesson-eco {
+  font-size: 0.7rem;
+  color: #818cf8;
+  background: rgba(99, 102, 241, 0.15);
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.lesson-line {
+  display: block;
+  font-size: 0.78rem;
+  color: #a5b4fc;
+  background: #0b1120;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 4px 0;
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+
+.tutorial-move-label {
+  font-family: ui-monospace, monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #a5b4fc;
+  margin-bottom: 8px;
+}
+
+.tutorial-opponent-move {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.tutorial-opponent-move strong {
+  color: #fbbf24;
+  font-family: ui-monospace, monospace;
+}
+
 .lesson-desc {
   margin: 0;
   font-size: 0.85rem;

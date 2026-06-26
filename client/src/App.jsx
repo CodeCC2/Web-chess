@@ -392,8 +392,8 @@ export default function App() {
           ) : (
             <>
               <p className="tutorial-lobby-desc">
-                เรียนรู้การเดินหมากแต่ละตัว ตั้งแต่เบี้ย เรือ บิชอป ม้า ควีน คิง
-                ไปจนถึงรุกและรุกฆาต พร้อมคำแนะนำทีละขั้นตอน
+                เรียนรู้การเปิดเกมยอดนิยม เช่น Ruy Lopez, Queen&apos;s Gambit,
+                Italian Game และ London System พร้อมคำอธิบายแนวคิดทีละตา
               </p>
               <div className="row">
                 <button
