@@ -721,6 +721,8 @@ input:focus {
   justify-content: flex-end;
   margin-bottom: 8px;
 }
+
+.puzzle-stats.card {
   background: linear-gradient(135deg, var(--bg-elevated), var(--bg-surface));
 }
 
