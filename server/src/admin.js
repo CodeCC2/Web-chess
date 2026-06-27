@@ -220,12 +220,21 @@ export function registerAdminRoutes(app) {
   });
 
   app.post("/admin/login", (req, res) => {
+    const wantsJson = req.headers.accept?.includes("application/json");
     if (!sessionToken) {
+      if (wantsJson) {
+        res.status(503).json({ ok: false, error: "admin_not_configured" });
+        return;
+      }
       res.status(503).send(configWarningPage());
       return;
     }
     const password = req.body?.password || "";
     if (password !== process.env.ADMIN_PASSWORD) {
+      if (wantsJson) {
+        res.status(401).json({ ok: false, error: "invalid_password" });
+        return;
+      }
       res.status(401).send(loginPage("รหัสผ่านไม่ถูกต้อง"));
       return;
     }
@@ -235,6 +244,10 @@ export function registerAdminRoutes(app) {
       "Set-Cookie",
       `${COOKIE_NAME}=${sessionToken}; Path=/admin; HttpOnly; SameSite=Lax; Max-Age=86400${secure}`
     );
+    if (wantsJson) {
+      res.json({ ok: true });
+      return;
+    }
     res.redirect(302, "/admin");
   });
 
