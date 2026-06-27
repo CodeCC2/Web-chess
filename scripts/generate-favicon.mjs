@@ -3,7 +3,7 @@
  * Usage: npm run favicon
  */
 import sharp from "sharp";
-import { existsSync } from "node:fs";
+import { existsSync, unlinkSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
@@ -39,4 +39,14 @@ await sharp(src)
   .toFile(resolve(publicDir, "favicon.png"));
 
 console.log("OK: favicon.png");
+
+// Legacy SVG knight icon overrides PNG in Chrome — remove if present.
+for (const legacy of ["favicon.svg", "apple-touch-icon.svg"]) {
+  const path = resolve(publicDir, legacy);
+  if (existsSync(path)) {
+    unlinkSync(path);
+    console.log(`Removed legacy ${legacy}`);
+  }
+}
+
 console.log("เสร็จแล้ว — commit แล้ว deploy ใหม่");
