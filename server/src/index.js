@@ -22,7 +22,7 @@ import { logPlayerSession, clientIpFromSocket } from "./supabase.js";
 import { registerSessionLogRoute } from "./sessionLogRoute.js";
 import { registerAuthRoutes, initAuth } from "./auth.js";
 import { parseSessionFromCookieHeader } from "./session.js";
-import { recordOnlineResult } from "./users.js";
+import { recordOnlineResult, updateLastIp } from "./users.js";
 import {
   initSiteAssets,
   registerSiteAssetRoutes,
@@ -432,6 +432,10 @@ io.on("connection", (socket) => {
           socket.data.displayName ||
           "ไม่ระบุชื่อ",
       });
+
+      if (socket.data.userId) {
+        void updateLastIp(socket.data.userId, socket.data.clientIp);
+      }
 
       if (color && reclaimColor) {
         socket.to(roomId).emit("opponentReconnected", { color });

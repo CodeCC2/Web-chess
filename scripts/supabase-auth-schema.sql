@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
   wins          INT NOT NULL DEFAULT 0,
   losses        INT NOT NULL DEFAULT 0,
   draws         INT NOT NULL DEFAULT 0,
+  registration_ip    TEXT,
+  last_ip            TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

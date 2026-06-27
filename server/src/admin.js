@@ -173,6 +173,8 @@ function dashboardPage({ logs, users, flash = "" }) {
         <td>${escapeHtml(u.username)}</td>
         <td>${escapeHtml(u.display_name)}</td>
         <td><span class="badge${u.role === "admin" ? " admin" : ""}">${escapeHtml(u.role)}</span></td>
+        <td>${escapeHtml(u.last_ip || "—")}</td>
+        <td>${escapeHtml(u.registration_ip || "—")}</td>
         <td>${u.wins ?? 0}</td>
         <td>${u.losses ?? 0}</td>
         <td>${u.draws ?? 0}</td>
@@ -202,9 +204,9 @@ function dashboardPage({ logs, users, flash = "" }) {
       <h2>สมาชิกในระบบ (${users.length})</h2>
       <table>
         <thead>
-          <tr><th>#</th><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>บทบาท</th><th>ชนะ</th><th>แพ้</th><th>เสมอ</th><th>สมัครเมื่อ</th></tr>
+          <tr><th>#</th><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>บทบาท</th><th>IP ล่าสุด</th><th>IP ตอนสมัคร</th><th>ชนะ</th><th>แพ้</th><th>เสมอ</th><th>สมัครเมื่อ</th></tr>
         </thead>
-        <tbody>${userRows || '<tr><td colspan="8">ยังไม่มีสมาชิก</td></tr>'}</tbody>
+        <tbody>${userRows || '<tr><td colspan="10">ยังไม่มีสมาชิก</td></tr>'}</tbody>
       </table>
     </div>
 

@@ -43,7 +43,13 @@ export async function findUserById(id) {
   return data;
 }
 
-export async function createUser({ username, password, displayName, role = "user" }) {
+export async function createUser({
+  username,
+  password,
+  displayName,
+  role = "user",
+  registrationIp = null,
+}) {
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   const { data, error } = await supabase
     .from("users")
@@ -52,6 +58,8 @@ export async function createUser({ username, password, displayName, role = "user
       password_hash: passwordHash,
       display_name: displayName || username,
       role,
+      registration_ip: registrationIp,
+      last_ip: registrationIp,
     })
     .select("*")
     .single();
@@ -94,11 +102,23 @@ export async function updateAvatarUrl(userId, avatarUrl) {
   return mapUser(data);
 }
 
+export async function updateLastIp(userId, ip) {
+  if (!userId || !ip) return;
+  const { error } = await supabase
+    .from("users")
+    .update({
+      last_ip: ip,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+  if (error) console.error("updateLastIp:", error.message);
+}
+
 export async function listUsers(limit = 200) {
   const { data, error } = await supabase
     .from("users")
     .select(
-      "id,username,display_name,avatar_url,role,wins,losses,draws,created_at"
+      "id,username,display_name,avatar_url,role,wins,losses,draws,registration_ip,last_ip,created_at"
     )
     .order("created_at", { ascending: false })
     .limit(limit);

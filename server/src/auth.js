@@ -6,7 +6,7 @@ import {
   getSessionFromRequest,
   sessionConfigured,
 } from "./session.js";
-import { supabase, supabaseConfigured } from "./supabase.js";
+import { supabase, supabaseConfigured, clientIpFromRequest } from "./supabase.js";
 import {
   createUser,
   findUserByUsername,
@@ -17,6 +17,7 @@ import {
   validateUsername,
   verifyUserPassword,
   ensureAdminUser,
+  updateLastIp,
 } from "./users.js";
 
 const upload = multer({
@@ -107,6 +108,7 @@ export function registerAuthRoutes(app) {
         username,
         password,
         displayName: displayName.slice(0, 30) || username,
+        registrationIp: clientIpFromRequest(req),
       });
       const token = createSessionToken(user);
       setSessionCookie(res, token);
@@ -143,6 +145,7 @@ export function registerAuthRoutes(app) {
         return;
       }
       const user = publicUser(row);
+      await updateLastIp(row.id, clientIpFromRequest(req));
       const token = createSessionToken(user);
       setSessionCookie(res, token);
       res.json({ ok: true, user });
