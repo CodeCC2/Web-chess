@@ -24,7 +24,10 @@ import {
 } from "./boardFeedback.js";
 import { saveSession, loadSession, clearSession } from "./gameSession.js";
 import { copyPgn, downloadPgn } from "./pgnUtils.js";
-import "./App.css";
+import AppBrand from "./components/AppBrand.jsx";
+import GameOverOverlay from "./components/GameOverOverlay.jsx";
+import PlayerStatusCard from "./components/PlayerStatusCard.jsx";
+import { BOARD_STYLE, SQUARES, boardWidth } from "./boardTheme.js";
 
 const FINISHED_STATUSES = new Set([
   "checkmate",
@@ -38,6 +41,33 @@ const FINISHED_STATUSES = new Set([
   "timeout",
 ]);
 
+const LOBBY_MODES = [
+  {
+    id: "online",
+    icon: "🌐",
+    title: "เล่นออนไลน์",
+    desc: "แชร์รหัสห้องเล่นกับเพื่อน",
+  },
+  {
+    id: "bot",
+    icon: "🤖",
+    title: "กับคอมพิวเตอร์",
+    desc: "ฝึกกับบอท 4 ระดับ",
+  },
+  {
+    id: "tutorial",
+    icon: "📖",
+    title: "สอนเล่น",
+    desc: "เปิดเกมยอดนิยมทีละตา",
+  },
+  {
+    id: "puzzle",
+    icon: "🧩",
+    title: "Puzzle",
+    desc: "ฝึกแท็กติก 50 ข้อ",
+  },
+];
+
 function randomRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
@@ -46,6 +76,23 @@ function colorLabel(color) {
   if (color === "white") return "ขาว";
   if (color === "black") return "ดำ";
   return color;
+}
+
+function gameOverVariant(status, winner, color) {
+  if (
+    [
+      "draw",
+      "draw_agreed",
+      "stalemate",
+      "insufficient_material",
+      "threefold_repetition",
+    ].includes(status)
+  ) {
+    return "draw";
+  }
+  if (color === "spectator") return "neutral";
+  if (winner === color) return "win";
+  return "lose";
 }
 
 export default function App() {
@@ -514,38 +561,26 @@ export default function App() {
   if (!roomId) {
     return (
       <div className="app lobby">
-        <h1>♞ หมากรุกออนไลน์</h1>
-        <p className="subtitle">
-          เล่นกับคอมพิวเตอร์ หรือแชร์รหัสห้องเพื่อเล่นกับเพื่อน
-        </p>
-        <div className="card">
-          <div className="mode-tabs">
-            <button
-              className={lobbyMode === "online" ? "tab active" : "tab"}
-              onClick={() => setLobbyMode("online")}
-            >
-              เล่นออนไลน์
-            </button>
-            <button
-              className={lobbyMode === "bot" ? "tab active" : "tab"}
-              onClick={() => setLobbyMode("bot")}
-            >
-              กับคอมพิวเตอร์
-            </button>
-            <button
-              className={lobbyMode === "tutorial" ? "tab active" : "tab"}
-              onClick={() => setLobbyMode("tutorial")}
-            >
-              สอนเล่น
-            </button>
-            <button
-              className={lobbyMode === "puzzle" ? "tab active" : "tab"}
-              onClick={() => setLobbyMode("puzzle")}
-            >
-              Puzzle
-            </button>
-          </div>
+        <div className="lobby-hero">
+          <AppBrand subtitle="เล่นกับเพื่อน คอมพิวเตอร์ Puzzle และบทเรียน" />
+        </div>
 
+        <div className="mode-grid">
+          {LOBBY_MODES.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              className={`mode-card${lobbyMode === mode.id ? " active" : ""}`}
+              onClick={() => setLobbyMode(mode.id)}
+            >
+              <span className="mode-card-icon">{mode.icon}</span>
+              <span className="mode-card-title">{mode.title}</span>
+              <span className="mode-card-desc">{mode.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="card lobby-form">
           {lobbyMode === "online" ? (
             <>
               <label>
@@ -589,8 +624,11 @@ export default function App() {
                 </button>
               </div>
               {notice && <p className="notice">{notice}</p>}
-              <p className="status">
-                เซิร์ฟเวอร์: {connected ? "🟢 เชื่อมต่อแล้ว" : "🔴 กำลังเชื่อมต่อ..."}
+              <p
+                className={`server-status ${connected ? "online" : "offline"}`}
+              >
+                <span className="server-status-dot" />
+                {connected ? "เซิร์ฟเวอร์พร้อม" : "กำลังเชื่อมต่อ..."}
               </p>
             </>
           ) : lobbyMode === "bot" ? (
@@ -675,11 +713,16 @@ export default function App() {
     state?.turn === color ? "ตาของคุณ" : "ตาคู่ต่อสู้";
 
   const clocks = clockMeta.clocks ?? state?.clocks;
+  const inCheck = !gameOver && state?.status === "check";
+  const isYourTurn = !gameOver && state?.turn === color && color !== "spectator";
+  const overlayVariant = gameOver
+    ? gameOverVariant(state?.status, state?.winner, color)
+    : null;
 
   return (
     <div className="app game">
       <header className="game-header">
-        <h1>♞ หมากรุกออนไลน์</h1>
+        <AppBrand compact />
         <div className="game-header-right">
           <div className="room-badge">
             ห้อง <strong>{roomId}</strong>
@@ -701,7 +744,7 @@ export default function App() {
       </header>
 
       <div className="game-body">
-        <div className="board-wrap">
+        <div className={`board-column`}>
           <ChessClock
             clocks={clocks}
             turn={state?.turn}
@@ -709,73 +752,111 @@ export default function App() {
             serverNow={clockMeta.serverNow ?? state?.serverNow}
             timeControl={state?.timeControl}
           />
-          <Chessboard
-            id="online-board"
-            position={state?.fen}
-            onPieceDrop={onPieceDrop}
-            onSquareClick={onSquareClick}
-            onPromotionCheck={() => false}
-            boardOrientation={color === "black" ? "black" : "white"}
-            arePiecesDraggable={
-              color !== "spectator" &&
-              !gameOver &&
-              state?.turn === color &&
-              !pendingPromotion
-            }
-            customSquareStyles={boardSquareStyles}
-            boardWidth={Math.min(480, window.innerWidth - 32)}
-            customBoardStyle={{
-              borderRadius: "8px",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
-            }}
-          />
-          {pendingPromotion && color !== "spectator" && (
-            <PromotionPicker
-              color={color === "white" ? "w" : "b"}
-              onSelect={handlePromotionSelect}
-              onCancel={() => setPendingPromotion(null)}
+          <div className={`board-wrap${inCheck ? " in-check" : ""}`}>
+            <Chessboard
+              id="online-board"
+              position={state?.fen}
+              onPieceDrop={onPieceDrop}
+              onSquareClick={onSquareClick}
+              onPromotionCheck={() => false}
+              boardOrientation={color === "black" ? "black" : "white"}
+              arePiecesDraggable={
+                color !== "spectator" &&
+                !gameOver &&
+                state?.turn === color &&
+                !pendingPromotion
+              }
+              customSquareStyles={boardSquareStyles}
+              boardWidth={boardWidth()}
+              customBoardStyle={BOARD_STYLE}
+              {...SQUARES}
+              animationDuration={300}
             />
-          )}
+            {pendingPromotion && color !== "spectator" && (
+              <PromotionPicker
+                color={color === "white" ? "w" : "b"}
+                onSelect={handlePromotionSelect}
+                onCancel={() => setPendingPromotion(null)}
+              />
+            )}
+            {gameOver && (
+              <GameOverOverlay
+                variant={overlayVariant}
+                title={gameOver}
+                subtitle={
+                  color === "spectator"
+                    ? "คุณกำลังดูในฐานะผู้ชม"
+                    : undefined
+                }
+              >
+                {color !== "spectator" && (
+                  <button
+                    className="primary"
+                    type="button"
+                    onClick={() =>
+                      socket.emit("rematch", {}, (res) => {
+                        if (!res?.ok)
+                          setNotice(res?.error || "เริ่มใหม่ไม่สำเร็จ");
+                      })
+                    }
+                  >
+                    เล่นอีกครั้ง
+                  </button>
+                )}
+                {state?.pgn && (
+                  <>
+                    <button type="button" onClick={handleCopyPgn}>
+                      คัดลอก PGN
+                    </button>
+                    <button type="button" onClick={handleDownloadPgn}>
+                      ดาวน์โหลด PGN
+                    </button>
+                  </>
+                )}
+                <button type="button" onClick={goHome}>
+                  กลับหน้าแรก
+                </button>
+              </GameOverOverlay>
+            )}
+          </div>
         </div>
 
         <aside className="panel">
           <div className="panel-section">
-            <div className="you">
-              คุณ: <span className={`chip ${color}`}>{colorLabel(color)}</span>
-            </div>
-            <div className="turn">
-              {gameOver ? (
-                <strong className="gameover">{gameOver}</strong>
-              ) : (
+            <div
+              className={`turn-status${isYourTurn ? " your-turn" : ""}${inCheck && isYourTurn ? " in-check" : ""}`}
+            >
+              {!gameOver && (
                 <>
                   <span className="dot" data-turn={state?.turn} />
                   {turnLabel}
-                  {state?.status === "check" && (
-                    <span className="check"> — รุก!</span>
-                  )}
+                  {inCheck && <span className="check"> — รุก!</span>}
                 </>
               )}
+              {gameOver && (
+                <span className="gameover-text">{gameOver}</span>
+              )}
             </div>
-            <div className="players">
-              <span>
-                ขาว:{" "}
-                {state?.connected?.white
-                  ? "🟢"
-                  : state?.players?.white
-                    ? "🟡"
-                    : "⚪"}{" "}
-                {state?.names?.white || "รอผู้เล่น..."}
-              </span>
-              <span>
-                ดำ:{" "}
-                {state?.connected?.black
-                  ? "🟢"
-                  : state?.players?.black
-                    ? "🟡"
-                    : "⚪"}{" "}
-                {state?.names?.black || "รอผู้เล่น..."}
-              </span>
+
+            <div className="player-cards">
+              <PlayerStatusCard
+                color="white"
+                name={state?.names?.white}
+                connected={state?.connected?.white}
+                occupied={state?.players?.white}
+                isYou={color === "white"}
+                isTurn={state?.turn === "white" && !gameOver}
+              />
+              <PlayerStatusCard
+                color="black"
+                name={state?.names?.black}
+                connected={state?.connected?.black}
+                occupied={state?.players?.black}
+                isYou={color === "black"}
+                isTurn={state?.turn === "black" && !gameOver}
+              />
             </div>
+
             {incomingDrawOffer && color !== "spectator" && !gameOver && (
               <p className="draw-offer-notice">
                 คู่ต่อสู้เสนอเสมอ — ยอมรับหรือไม่?
@@ -785,21 +866,13 @@ export default function App() {
 
           <div className="panel-section actions">
             {color !== "spectator" && !gameOver && (
-              <>
-                <button
-                  className="danger"
-                  onClick={() =>
-                    socket.emit("resign", {}, (res) => {
-                      if (!res?.ok) setNotice(res?.error || "ยอมแพ้ไม่สำเร็จ");
-                    })
-                  }
-                >
-                  ยอมแพ้
-                </button>
+              <div className="action-group">
+                <span className="action-group-label">การเสนอ</span>
                 {incomingDrawOffer ? (
                   <>
                     <button
                       className="primary"
+                      type="button"
                       onClick={() =>
                         socket.emit("acceptDraw", {}, (res) => {
                           if (!res?.ok)
@@ -810,6 +883,7 @@ export default function App() {
                       ยอมเสมอ
                     </button>
                     <button
+                      type="button"
                       onClick={() =>
                         socket.emit("declineDraw", {}, (res) => {
                           if (!res?.ok)
@@ -822,6 +896,7 @@ export default function App() {
                   </>
                 ) : (
                   <button
+                    type="button"
                     onClick={() =>
                       socket.emit("offerDraw", {}, (res) => {
                         if (!res?.ok)
@@ -833,33 +908,31 @@ export default function App() {
                     เสนอเสมอ
                   </button>
                 )}
-              </>
+              </div>
             )}
-            {gameOver && color !== "spectator" && (
-              <button
-                className="primary"
-                onClick={() =>
-                  socket.emit("rematch", {}, (res) => {
-                    if (!res?.ok) setNotice(res?.error || "เริ่มใหม่ไม่สำเร็จ");
-                  })
-                }
-              >
-                เล่นอีกครั้ง
+
+            {color !== "spectator" && !gameOver && (
+              <div className="action-group danger-zone">
+                <span className="action-group-label">จบเกม</span>
+                <button
+                  className="danger"
+                  type="button"
+                  onClick={() =>
+                    socket.emit("resign", {}, (res) => {
+                      if (!res?.ok) setNotice(res?.error || "ยอมแพ้ไม่สำเร็จ");
+                    })
+                  }
+                >
+                  ยอมแพ้
+                </button>
+              </div>
+            )}
+
+            <div className="action-group">
+              <button type="button" onClick={goHome}>
+                หน้าแรก
               </button>
-            )}
-            {gameOver && state?.pgn && (
-              <>
-                <button type="button" onClick={handleCopyPgn}>
-                  คัดลอก PGN
-                </button>
-                <button type="button" onClick={handleDownloadPgn}>
-                  ดาวน์โหลด PGN
-                </button>
-              </>
-            )}
-            <button type="button" onClick={goHome}>
-              หน้าแรก
-            </button>
+            </div>
           </div>
 
           {pgnNotice && <p className="notice">{pgnNotice}</p>}

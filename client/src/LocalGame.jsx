@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
-import { getBotMove, DIFFICULTY_LABELS, THINK_MS } from "./bot.js";
+import { getBotMoveAsync, DIFFICULTY_LABELS, THINK_MS, BOT_ANIMATION_MS } from "./bot.js";
 import MoveList from "./MoveList.jsx";
 import PromotionPicker from "./PromotionPicker.jsx";
 import { useChessBoardInteraction } from "./useChessBoardInteraction.js";
@@ -10,7 +10,17 @@ import {
   playMoveSound,
   classifyMoveSound,
 } from "./boardFeedback.js";
+import AppBrand from "./components/AppBrand.jsx";
+import GameOverOverlay from "./components/GameOverOverlay.jsx";
+import ThinkingDots from "./components/ThinkingDots.jsx";
 import { copyPgn, downloadPgn } from "./pgnUtils.js";
+import {
+  BOARD_STYLE,
+  SQUARES,
+  boardWidth,
+  gameOverVariantFromInfo,
+  gameOverTitle,
+} from "./boardTheme.js";
 
 const DIFFICULTY_LABEL = DIFFICULTY_LABELS;
 
@@ -54,16 +64,15 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   const botColor = playerColor === "white" ? "b" : "w";
 
   const gameOver = useMemo(() => {
-    const s = info.status;
-    const outcome = (winner) =>
-      winner === playerColor ? "คุณชนะ!" : "คุณแพ้";
-    if (s === "checkmate") return `รุมฆาต — ${outcome(info.winner)}`;
-    if (s === "stalemate") return "เสมอ — stalemate";
-    if (s === "draw") return "เสมอ";
-    if (s === "insufficient_material") return "เสมอ — หมากไม่พอรุมฆาต";
-    if (s === "threefold_repetition") return "เสมอ — ตำแหน่งซ้ำ 3 ครั้ง";
-    return null;
+    if (!info.status || info.status === "playing" || info.status === "check") {
+      return null;
+    }
+    return gameOverTitle(info, playerColor);
   }, [info, playerColor]);
+
+  const overlayVariant = gameOver
+    ? gameOverVariantFromInfo(info, playerColor)
+    : null;
 
   const sync = useCallback(() => {
     const game = gameRef.current;
@@ -107,15 +116,22 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
 
     const gen = ++botMoveGenRef.current;
     setThinking(true);
-    const delay = THINK_MS[difficulty] ?? 450;
+    const delay = (THINK_MS[difficulty] ?? 450) + BOT_ANIMATION_MS;
+    let cancelled = false;
+
     const timer = setTimeout(() => {
       if (gen !== botMoveGenRef.current) return;
-      const mv = getBotMove(game.fen(), difficulty);
-      if (gen === botMoveGenRef.current && mv) commitMove(mv);
-      if (gen === botMoveGenRef.current) setThinking(false);
+      getBotMoveAsync(game.fen(), difficulty).then((mv) => {
+        if (cancelled || gen !== botMoveGenRef.current) return;
+        if (mv) commitMove(mv);
+        if (gen === botMoveGenRef.current) setThinking(false);
+      });
     }, delay);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [fen, botColor, difficulty, commitMove]);
 
   const getGame = useCallback(() => gameRef.current, []);
@@ -233,11 +249,12 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   }, []);
 
   const isPlayerTurn = info.turn === playerColor && !gameOver;
+  const inCheck = info.status === "check" && isPlayerTurn;
 
   return (
     <div className="app game">
       <header className="game-header">
-        <h1>♞ หมากรุกออนไลน์</h1>
+        <AppBrand compact />
         <div className="game-header-right">
           <div className="room-badge">
             กับคอมพิวเตอร์ · <strong>{DIFFICULTY_LABEL[difficulty]}</strong>
@@ -249,43 +266,61 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
       </header>
 
       <div className="game-body">
-        <div className="board-wrap">
-          <Chessboard
-            id="local-board"
-            position={fen}
-            onPieceDrop={onPieceDrop}
-            onSquareClick={onSquareClick}
-            onPromotionCheck={() => false}
-            boardOrientation={playerColor === "black" ? "black" : "white"}
-            arePiecesDraggable={isPlayerTurn && !thinking && !pendingPromotion}
-            customSquareStyles={boardSquareStyles}
-            boardWidth={Math.min(480, window.innerWidth - 32)}
-            customBoardStyle={{
-              borderRadius: "8px",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
-            }}
-          />
-          {pendingPromotion && (
-            <PromotionPicker
-              color={playerChar}
-              onSelect={handlePromotionSelect}
-              onCancel={() => setPendingPromotion(null)}
+        <div className="board-column">
+          <div className={`board-wrap${inCheck ? " in-check" : ""}`}>
+            <Chessboard
+              id="local-board"
+              position={fen}
+              animationDuration={BOT_ANIMATION_MS}
+              onPieceDrop={onPieceDrop}
+              onSquareClick={onSquareClick}
+              onPromotionCheck={() => false}
+              boardOrientation={playerColor === "black" ? "black" : "white"}
+              arePiecesDraggable={isPlayerTurn && !thinking && !pendingPromotion}
+              customSquareStyles={boardSquareStyles}
+              boardWidth={boardWidth()}
+              customBoardStyle={BOARD_STYLE}
+              {...SQUARES}
             />
-          )}
+            {pendingPromotion && (
+              <PromotionPicker
+                color={playerChar}
+                onSelect={handlePromotionSelect}
+                onCancel={() => setPendingPromotion(null)}
+              />
+            )}
+            {gameOver && (
+              <GameOverOverlay
+                variant={overlayVariant}
+                title={gameOver}
+                subtitle={`ระดับ ${DIFFICULTY_LABEL[difficulty]}`}
+              >
+                <button className="primary" type="button" onClick={newGame}>
+                  เล่นอีกครั้ง
+                </button>
+                <button type="button" onClick={handleCopyPgn}>
+                  คัดลอก PGN
+                </button>
+                <button type="button" onClick={handleDownloadPgn}>
+                  ดาวน์โหลด PGN
+                </button>
+                <button type="button" onClick={onExit}>
+                  กลับหน้าแรก
+                </button>
+              </GameOverOverlay>
+            )}
+          </div>
         </div>
 
         <aside className="panel">
           <div className="panel-section">
-            <div className="you">
-              คุณ: <span className={`chip ${playerColor}`}>
-                {playerColor === "white" ? "ขาว" : "ดำ"}
-              </span>
-            </div>
-            <div className="turn">
+            <div
+              className={`turn-status${isPlayerTurn && !thinking ? " your-turn" : ""}${inCheck ? " in-check" : ""}`}
+            >
               {gameOver ? (
-                <strong className="gameover">{gameOver}</strong>
+                <span className="gameover-text">{gameOver}</span>
               ) : thinking ? (
-                <span>คอมพิวเตอร์กำลังคิด…</span>
+                <ThinkingDots label="คอมพิวเตอร์กำลังคิด" />
               ) : (
                 <>
                   <span className="dot" data-turn={info.turn} />
@@ -296,29 +331,62 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
                 </>
               )}
             </div>
+
+            <div className="player-cards">
+              <div
+                className={`player-card white${info.turn === "white" && !gameOver ? " active-turn" : ""}${playerColor === "white" ? " is-you" : ""}`}
+              >
+                <div className="player-card-piece">♔</div>
+                <div className="player-card-info">
+                  <span className="player-card-label">
+                    ขาว
+                    {playerColor === "white" && (
+                      <span className="player-card-you">คุณ</span>
+                    )}
+                  </span>
+                  <span className="player-card-name">
+                    {playerColor === "white" ? "คุณ" : "คอมพิวเตอร์"}
+                  </span>
+                </div>
+                <span className="player-card-status status-online" />
+              </div>
+              <div
+                className={`player-card black${info.turn === "black" && !gameOver ? " active-turn" : ""}${playerColor === "black" ? " is-you" : ""}`}
+              >
+                <div className="player-card-piece">♚</div>
+                <div className="player-card-info">
+                  <span className="player-card-label">
+                    ดำ
+                    {playerColor === "black" && (
+                      <span className="player-card-you">คุณ</span>
+                    )}
+                  </span>
+                  <span className="player-card-name">
+                    {playerColor === "black" ? "คุณ" : "คอมพิวเตอร์"}
+                  </span>
+                </div>
+                <span className="player-card-status status-online" />
+              </div>
+            </div>
           </div>
 
           <div className="panel-section actions">
-            <button className="primary" onClick={newGame}>
-              เกมใหม่
-            </button>
-            <button type="button" onClick={undoMove} disabled={!canUndo}>
-              ย้อนกลับ
-            </button>
-            <button type="button" onClick={redoMove} disabled={!canRedo}>
-              ทำซ้ำ
-            </button>
-            {gameOver && (
-              <>
-                <button type="button" onClick={handleCopyPgn}>
-                  คัดลอก PGN
-                </button>
-                <button type="button" onClick={handleDownloadPgn}>
-                  ดาวน์โหลด PGN
-                </button>
-              </>
-            )}
-            <button onClick={onExit}>กลับเมนู</button>
+            <div className="action-group">
+              <button className="primary" type="button" onClick={newGame}>
+                เกมใหม่
+              </button>
+              <button type="button" onClick={undoMove} disabled={!canUndo}>
+                ย้อนกลับ
+              </button>
+              <button type="button" onClick={redoMove} disabled={!canRedo}>
+                ทำซ้ำ
+              </button>
+            </div>
+            <div className="action-group">
+              <button type="button" onClick={onExit}>
+                กลับเมนู
+              </button>
+            </div>
           </div>
 
           {pgnNotice && <p className="notice">{pgnNotice}</p>}
