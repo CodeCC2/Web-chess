@@ -6,9 +6,9 @@ export default function MoveList({ history = [] }) {
 
   return (
     <div className="panel-section moves">
-      <h3>Moves</h3>
+      <h3>บันทึกการเดิน</h3>
       {rows.length === 0 ? (
-        <p className="moves-empty">No moves yet.</p>
+        <p className="moves-empty">ยังไม่มีการเดินหมาก</p>
       ) : (
         <div className="movelist">
           {rows.map(([white, black], i) => (

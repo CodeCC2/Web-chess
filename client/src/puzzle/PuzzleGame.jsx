@@ -3,6 +3,11 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import PromotionPicker from "../PromotionPicker.jsx";
 import { buildMoveHighlights } from "../boardUtils.js";
+import {
+  lastMoveHighlight,
+  playMoveSound,
+  classifyMoveSound,
+} from "../boardFeedback.js";
 import { needsPromotion } from "../promotionUtils.js";
 import { markPuzzleComplete } from "./puzzles.js";
 
@@ -37,6 +42,7 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
   const [successFlash, setSuccessFlash] = useState(false);
   const [pendingPromotion, setPendingPromotion] = useState(null);
   const [lastSan, setLastSan] = useState(null);
+  const [lastMove, setLastMove] = useState(null);
 
   const solution = puzzle.solution;
   const playerPlies = solution.filter((_, i) => i % 2 === 0).length;
@@ -55,6 +61,7 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
     setSuccessFlash(false);
     setPendingPromotion(null);
     setLastSan(null);
+    setLastMove(null);
   }, [puzzle]);
 
   useEffect(() => {
@@ -75,8 +82,13 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
   }, [wrongSquare]);
 
   const customSquareStyles = useMemo(
-    () => ({ ...optionSquares, ...hintStyles, ...wrongStyles }),
-    [optionSquares, hintStyles, wrongStyles]
+    () => ({
+      ...optionSquares,
+      ...lastMoveHighlight(lastMove),
+      ...hintStyles,
+      ...wrongStyles,
+    }),
+    [optionSquares, lastMove, hintStyles, wrongStyles]
   );
 
   const hintArrows = useMemo(() => {
@@ -101,6 +113,8 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
     if (!res) return null;
     setFen(game.fen());
     setLastSan(res.san);
+    setLastMove({ from: res.from, to: res.to, san: res.san, captured: res.captured, flags: res.flags });
+    playMoveSound(classifyMoveSound(res));
     return res;
   }, []);
 

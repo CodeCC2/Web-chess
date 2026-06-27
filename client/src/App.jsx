@@ -17,6 +17,13 @@ import { isLegalMove } from "./promotionUtils.js";
 import { TIME_CONTROL_OPTIONS } from "./clockUtils.js";
 import RoomChat from "./RoomChat.jsx";
 import { useChessBoardInteraction } from "./useChessBoardInteraction.js";
+import {
+  lastMoveHighlight,
+  playMoveSound,
+  classifyMoveSound,
+} from "./boardFeedback.js";
+import { saveSession, loadSession, clearSession } from "./gameSession.js";
+import { copyPgn, downloadPgn } from "./pgnUtils.js";
 import "./App.css";
 
 const FINISHED_STATUSES = new Set([
@@ -24,6 +31,7 @@ const FINISHED_STATUSES = new Set([
   "resign",
   "stalemate",
   "draw",
+  "draw_agreed",
   "insufficient_material",
   "threefold_repetition",
   "opponent_left",
@@ -32,6 +40,12 @@ const FINISHED_STATUSES = new Set([
 
 function randomRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+function colorLabel(color) {
+  if (color === "white") return "ขาว";
+  if (color === "black") return "ดำ";
+  return color;
 }
 
 export default function App() {
@@ -48,6 +62,7 @@ export default function App() {
     clockRunning: false,
     serverNow: null,
   });
+  const [pgnNotice, setPgnNotice] = useState("");
 
   const [lobbyMode, setLobbyMode] = useState("online");
   const [difficulty, setDifficulty] = useState("medium");
@@ -63,6 +78,14 @@ export default function App() {
 
   const stateRef = useRef(state);
   stateRef.current = state;
+  const prevHistoryLen = useRef(0);
+  const reconnectAttempted = useRef(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get("room")?.trim().toUpperCase();
+    if (fromUrl) setRoomInput(fromUrl);
+  }, []);
 
   const startBotGame = useCallback(() => {
     const playerColor =
@@ -78,35 +101,36 @@ export default function App() {
     if (!state) return null;
     const s = state.status;
     const outcome = (winner) => {
-      if (color === "spectator") return `${winner} wins!`;
-      return winner === color ? "you win!" : "you lose.";
+      if (color === "spectator") return `${colorLabel(winner)}ชนะ!`;
+      return winner === color ? "คุณชนะ!" : "คุณแพ้";
     };
-    if (s === "checkmate") return `Checkmate — ${outcome(state.winner)}`;
+    if (s === "checkmate") return `รุมฆาต — ${outcome(state.winner)}`;
     if (s === "resign") {
       if (color === "spectator")
-        return `A player resigned — ${state.winner} wins!`;
+        return `มีผู้เล่นยอมแพ้ — ${colorLabel(state.winner)}ชนะ!`;
       return state.winner === color
-        ? "Opponent resigned — you win!"
-        : "You resigned — you lose.";
+        ? "คู่ต่อสู้ยอมแพ้ — คุณชนะ!"
+        : "คุณยอมแพ้ — คุณแพ้";
     }
     if (s === "opponent_left") {
       if (color === "spectator")
-        return `A player left — ${state.winner} wins!`;
+        return `มีผู้เล่นออกจากห้อง — ${colorLabel(state.winner)}ชนะ!`;
       return state.winner === color
-        ? "Opponent left — you win!"
-        : "You left — you lose.";
+        ? "คู่ต่อสู้ออกจากห้อง — คุณชนะ!"
+        : "คุณออกจากห้อง — คุณแพ้";
     }
     if (s === "timeout") {
       if (color === "spectator")
-        return `Time out — ${state.winner} wins!`;
+        return `หมดเวลา — ${colorLabel(state.winner)}ชนะ!`;
       return state.winner === color
-        ? "Opponent ran out of time — you win!"
-        : "You ran out of time — you lose.";
+        ? "คู่ต่อสู้หมดเวลา — คุณชนะ!"
+        : "คุณหมดเวลา — คุณแพ้";
     }
-    if (s === "stalemate") return "Draw — stalemate.";
-    if (s === "draw") return "Draw.";
-    if (s === "insufficient_material") return "Draw — insufficient material.";
-    if (s === "threefold_repetition") return "Draw — threefold repetition.";
+    if (s === "draw_agreed") return "เสมอ — ทั้งสองฝ่ายตกลง";
+    if (s === "stalemate") return "เสมอ — stalemate";
+    if (s === "draw") return "เสมอ";
+    if (s === "insufficient_material") return "เสมอ — หมากไม่พอรุมฆาต";
+    if (s === "threefold_repetition") return "เสมอ — ตำแหน่งซ้ำ 3 ครั้ง";
     return null;
   }, [state, color]);
 
@@ -115,7 +139,7 @@ export default function App() {
       "move",
       { from: sourceSquare, to: targetSquare, promotion },
       (res) => {
-        if (!res?.ok) setNotice(res?.error || "Move rejected");
+        if (!res?.ok) setNotice(res?.error || "เดินหมากไม่สำเร็จ");
       }
     );
   }, []);
@@ -159,6 +183,98 @@ export default function App() {
     onMove,
   });
 
+  const boardSquareStyles = useMemo(
+    () => ({ ...optionSquares, ...lastMoveHighlight(state?.lastMove) }),
+    [optionSquares, state?.lastMove]
+  );
+
+  useEffect(() => {
+    const len = state?.history?.length ?? 0;
+    if (len > prevHistoryLen.current && state?.lastMove) {
+      playMoveSound(classifyMoveSound(state.lastMove));
+    }
+    prevHistoryLen.current = len;
+  }, [state?.history?.length, state?.lastMove]);
+
+  const applyJoinResult = useCallback((id, res) => {
+    if (!res?.ok) {
+      setNotice(res?.error || "เข้าห้องไม่สำเร็จ");
+      return false;
+    }
+    setRoomId(id);
+    setColor(res.color);
+    setState(res.state);
+    setChatMessages(res.state?.chat || []);
+    setClockMeta({
+      clocks: res.state.clocks,
+      clockRunning: res.state.clockRunning,
+      serverNow: res.state.serverNow,
+    });
+    prevHistoryLen.current = res.state?.history?.length ?? 0;
+    if (res.color !== "spectator" && res.token) {
+      saveSession({
+        roomId: id,
+        token: res.token,
+        name: name.trim() || "ไม่ระบุชื่อ",
+        timeControl,
+      });
+    }
+    setNotice(
+      res.color === "spectator"
+        ? "ห้องเต็มแล้ว — คุณเป็นผู้ชม"
+        : `คุณเล่นเป็นฝ่าย${colorLabel(res.color)}`
+    );
+    return true;
+  }, [name, timeControl]);
+
+  const joinGame = useCallback(
+    (targetRoom, { reconnectToken } = {}) => {
+      const id = (targetRoom || roomInput || randomRoomId()).toUpperCase();
+      socket.emit(
+        "joinGame",
+        {
+          roomId: id,
+          name: name.trim() || "ไม่ระบุชื่อ",
+          timeControl,
+          reconnectToken,
+        },
+        (res) => applyJoinResult(id, res)
+      );
+    },
+    [name, roomInput, timeControl, applyJoinResult]
+  );
+
+  useEffect(() => {
+    if (reconnectAttempted.current || roomId) return;
+    const session = loadSession();
+    if (!session?.roomId || !session?.token) return;
+
+    const tryReconnect = () => {
+      if (reconnectAttempted.current) return;
+      reconnectAttempted.current = true;
+      if (session.name) setName(session.name);
+      if (session.timeControl) setTimeControl(session.timeControl);
+      setRoomInput(session.roomId);
+      socket.emit(
+        "joinGame",
+        {
+          roomId: session.roomId,
+          name: session.name || "ไม่ระบุชื่อ",
+          timeControl: session.timeControl || "none",
+          reconnectToken: session.token,
+        },
+        (res) => {
+          if (!applyJoinResult(session.roomId, res)) {
+            clearSession();
+          }
+        }
+      );
+    };
+
+    if (socket.connected) tryReconnect();
+    else socket.once("connect", tryReconnect);
+  }, [roomId, applyJoinResult]);
+
   useEffect(() => {
     function onConnect() {
       setConnected(true);
@@ -179,16 +295,23 @@ export default function App() {
       resetBoardUi();
     }
     function onOpponentJoined() {
-      setNotice("Opponent joined the game.");
+      setNotice("คู่ต่อสู้เข้าห้องแล้ว");
     }
     function onOpponentLeft() {
-      setNotice("Opponent left the game.");
+      setNotice("คู่ต่อสู่ออกจากห้อง");
+    }
+    function onOpponentDisconnected() {
+      setNotice("คู่ต่อสู้หลุดการเชื่อมต่อ — รอ reconnect 2 นาที");
+    }
+    function onOpponentReconnected() {
+      setNotice("คู่ต่อสู้กลับมาแล้ว");
     }
     function onGameOver({ status, winner }) {
       setState((prev) => (prev ? { ...prev, status, winner } : prev));
     }
     function onRematchStarted() {
-      setNotice("Rematch started!");
+      setNotice("เริ่มเกมใหม่!");
+      prevHistoryLen.current = 0;
     }
     function onClockUpdate(payload) {
       setClockMeta({
@@ -219,6 +342,8 @@ export default function App() {
     socket.on("gameState", onGameState);
     socket.on("opponentJoined", onOpponentJoined);
     socket.on("opponentLeft", onOpponentLeft);
+    socket.on("opponentDisconnected", onOpponentDisconnected);
+    socket.on("opponentReconnected", onOpponentReconnected);
     socket.on("gameOver", onGameOver);
     socket.on("rematchStarted", onRematchStarted);
     socket.on("clockUpdate", onClockUpdate);
@@ -230,43 +355,14 @@ export default function App() {
       socket.off("gameState", onGameState);
       socket.off("opponentJoined", onOpponentJoined);
       socket.off("opponentLeft", onOpponentLeft);
+      socket.off("opponentDisconnected", onOpponentDisconnected);
+      socket.off("opponentReconnected", onOpponentReconnected);
       socket.off("gameOver", onGameOver);
       socket.off("rematchStarted", onRematchStarted);
       socket.off("clockUpdate", onClockUpdate);
       socket.off("chatMessage", onChatMessage);
     };
   }, [resetBoardUi]);
-
-  const joinGame = useCallback(
-    (targetRoom) => {
-      const id = (targetRoom || roomInput || randomRoomId()).toUpperCase();
-      socket.emit(
-        "joinGame",
-        { roomId: id, name: name.trim() || "Anonymous", timeControl },
-        (res) => {
-          if (!res?.ok) {
-            setNotice(res?.error || "Failed to join");
-            return;
-          }
-          setRoomId(id);
-          setColor(res.color);
-          setState(res.state);
-          setChatMessages(res.state?.chat || []);
-          setClockMeta({
-            clocks: res.state.clocks,
-            clockRunning: res.state.clockRunning,
-            serverNow: res.state.serverNow,
-          });
-          setNotice(
-            res.color === "spectator"
-              ? "Game is full — you are spectating."
-              : `You are playing as ${res.color}.`
-          );
-        }
-      );
-    },
-    [name, roomInput, timeControl]
-  );
 
   const handleTutorialNext = useCallback(() => {
     if (!tutorialLesson) return;
@@ -298,7 +394,7 @@ export default function App() {
 
   const sendChat = useCallback((text) => {
     socket.emit("chatMessage", { text }, (res) => {
-      if (!res?.ok) setNotice(res?.error || "Could not send message");
+      if (!res?.ok) setNotice(res?.error || "ส่งข้อความไม่สำเร็จ");
     });
   }, []);
 
@@ -306,12 +402,16 @@ export default function App() {
     if (roomId) {
       socket.emit("leaveGame", {}, () => {});
     }
+    clearSession();
+    reconnectAttempted.current = false;
     setRoomId(null);
     setColor(null);
     setState(null);
     setChatMessages([]);
     setNotice("");
+    setPgnNotice("");
     resetBoardUi();
+    prevHistoryLen.current = 0;
     setClockMeta({ clocks: null, clockRunning: false, serverNow: null });
     setBotConfig(null);
     setTutorialLesson(null);
@@ -319,6 +419,35 @@ export default function App() {
     setActivePuzzle(null);
     setShowPuzzlePicker(false);
   }, [roomId, resetBoardUi]);
+
+  const inviteUrl = roomId
+    ? `${window.location.origin}${window.location.pathname}?room=${roomId}`
+    : "";
+
+  const incomingDrawOffer =
+    state?.drawOffer && state.drawOffer !== color ? state.drawOffer : null;
+
+  const handleCopyInvite = useCallback(async () => {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setNotice("คัดลอกลิงก์ชวนเล่นแล้ว");
+    } catch {
+      setNotice("คัดลอกลิงก์ไม่สำเร็จ");
+    }
+  }, [inviteUrl]);
+
+  const handleCopyPgn = useCallback(async () => {
+    if (!state?.pgn) return;
+    const ok = await copyPgn(state.pgn);
+    setPgnNotice(ok ? "คัดลอก PGN แล้ว" : "คัดลอก PGN ไม่สำเร็จ");
+  }, [state?.pgn]);
+
+  const handleDownloadPgn = useCallback(() => {
+    if (!state?.pgn) return;
+    downloadPgn(state.pgn, `chess-${roomId || "game"}.pgn`);
+    setPgnNotice("ดาวน์โหลด PGN แล้ว");
+  }, [state?.pgn, roomId]);
 
   if (activePuzzle) {
     return (
@@ -378,9 +507,9 @@ export default function App() {
   if (!roomId) {
     return (
       <div className="app lobby">
-        <h1>♞ Online Chess</h1>
+        <h1>♞ หมากรุกออนไลน์</h1>
         <p className="subtitle">
-          Play against the computer, or share a room code to play a friend.
+          เล่นกับคอมพิวเตอร์ หรือแชร์รหัสห้องเพื่อเล่นกับเพื่อน
         </p>
         <div className="card">
           <div className="mode-tabs">
@@ -388,13 +517,13 @@ export default function App() {
               className={lobbyMode === "online" ? "tab active" : "tab"}
               onClick={() => setLobbyMode("online")}
             >
-              Play online
+              เล่นออนไลน์
             </button>
             <button
               className={lobbyMode === "bot" ? "tab active" : "tab"}
               onClick={() => setLobbyMode("bot")}
             >
-              vs Computer
+              กับคอมพิวเตอร์
             </button>
             <button
               className={lobbyMode === "tutorial" ? "tab active" : "tab"}
@@ -413,25 +542,25 @@ export default function App() {
           {lobbyMode === "online" ? (
             <>
               <label>
-                Your name
+                ชื่อของคุณ
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Anonymous"
+                  placeholder="ไม่ระบุชื่อ"
                   maxLength={20}
                 />
               </label>
               <label>
-                Room code
+                รหัสห้อง
                 <input
                   value={roomInput}
                   onChange={(e) => setRoomInput(e.target.value.toUpperCase())}
-                  placeholder="e.g. AB12CD"
+                  placeholder="เช่น AB12CD"
                   maxLength={8}
                 />
               </label>
               <label>
-                Time control
+                ควบคุมเวลา
                 <div className="seg seg-wrap">
                   {TIME_CONTROL_OPTIONS.map((tc) => (
                     <button
@@ -449,18 +578,18 @@ export default function App() {
               </label>
               <div className="row">
                 <button className="primary" onClick={() => joinGame()}>
-                  {roomInput ? "Join room" : "Create new game"}
+                  {roomInput ? "เข้าห้อง" : "สร้างห้องใหม่"}
                 </button>
               </div>
               {notice && <p className="notice">{notice}</p>}
               <p className="status">
-                Server: {connected ? "🟢 connected" : "🔴 connecting..."}
+                เซิร์ฟเวอร์: {connected ? "🟢 เชื่อมต่อแล้ว" : "🔴 กำลังเชื่อมต่อ..."}
               </p>
             </>
           ) : lobbyMode === "bot" ? (
             <>
               <label>
-                Difficulty
+                ระดับความยาก
                 <div className="seg seg-wrap">
                   {Object.keys(DIFFICULTY_LABELS).map((d) => (
                     <button
@@ -474,24 +603,28 @@ export default function App() {
                 </div>
               </label>
               <label>
-                Play as
+                เล่นเป็นฝ่าย
                 <div className="seg">
-                  {["white", "black", "random"].map((c) => (
+                  {[
+                    { id: "white", label: "ขาว" },
+                    { id: "black", label: "ดำ" },
+                    { id: "random", label: "สุ่ม" },
+                  ].map((c) => (
                     <button
-                      key={c}
+                      key={c.id}
                       className={
-                        botColorChoice === c ? "seg-btn active" : "seg-btn"
+                        botColorChoice === c.id ? "seg-btn active" : "seg-btn"
                       }
-                      onClick={() => setBotColorChoice(c)}
+                      onClick={() => setBotColorChoice(c.id)}
                     >
-                      {c[0].toUpperCase() + c.slice(1)}
+                      {c.label}
                     </button>
                   ))}
                 </div>
               </label>
               <div className="row">
                 <button className="primary" onClick={startBotGame}>
-                  Start game
+                  เริ่มเกม
                 </button>
               </div>
             </>
@@ -532,26 +665,30 @@ export default function App() {
   }
 
   const turnLabel =
-    state?.turn === color ? "Your move" : "Opponent's move";
+    state?.turn === color ? "ตาของคุณ" : "ตาคู่ต่อสู้";
 
   const clocks = clockMeta.clocks ?? state?.clocks;
 
   return (
     <div className="app game">
       <header className="game-header">
-        <h1>♞ Online Chess</h1>
+        <h1>♞ หมากรุกออนไลน์</h1>
         <div className="game-header-right">
           <div className="room-badge">
-            Room <strong>{roomId}</strong>
+            ห้อง <strong>{roomId}</strong>
             <button
               className="link"
+              type="button"
               onClick={() => navigator.clipboard?.writeText(roomId)}
             >
-              copy
+              คัดลอกรหัส
+            </button>
+            <button className="link" type="button" onClick={handleCopyInvite}>
+              ลิงก์ชวนเล่น
             </button>
           </div>
           <button type="button" className="home-btn" onClick={goHome}>
-            Home
+            หน้าแรก
           </button>
         </div>
       </header>
@@ -578,7 +715,7 @@ export default function App() {
               state?.turn === color &&
               !pendingPromotion
             }
-            customSquareStyles={optionSquares}
+            customSquareStyles={boardSquareStyles}
             boardWidth={Math.min(480, window.innerWidth - 32)}
             customBoardStyle={{
               borderRadius: "8px",
@@ -597,7 +734,7 @@ export default function App() {
         <aside className="panel">
           <div className="panel-section">
             <div className="you">
-              You: <span className={`chip ${color}`}>{color}</span>
+              คุณ: <span className={`chip ${color}`}>{colorLabel(color)}</span>
             </div>
             <div className="turn">
               {gameOver ? (
@@ -607,52 +744,118 @@ export default function App() {
                   <span className="dot" data-turn={state?.turn} />
                   {turnLabel}
                   {state?.status === "check" && (
-                    <span className="check"> — Check!</span>
+                    <span className="check"> — รุก!</span>
                   )}
                 </>
               )}
             </div>
             <div className="players">
               <span>
-                White: {state?.players?.white ? "🟢" : "⚪"}{" "}
-                {state?.names?.white || "waiting..."}
+                ขาว:{" "}
+                {state?.connected?.white
+                  ? "🟢"
+                  : state?.players?.white
+                    ? "🟡"
+                    : "⚪"}{" "}
+                {state?.names?.white || "รอผู้เล่น..."}
               </span>
               <span>
-                Black: {state?.players?.black ? "🟢" : "⚪"}{" "}
-                {state?.names?.black || "waiting..."}
+                ดำ:{" "}
+                {state?.connected?.black
+                  ? "🟢"
+                  : state?.players?.black
+                    ? "🟡"
+                    : "⚪"}{" "}
+                {state?.names?.black || "รอผู้เล่น..."}
               </span>
             </div>
+            {incomingDrawOffer && color !== "spectator" && !gameOver && (
+              <p className="draw-offer-notice">
+                คู่ต่อสู้เสนอเสมอ — ยอมรับหรือไม่?
+              </p>
+            )}
           </div>
 
           <div className="panel-section actions">
             {color !== "spectator" && !gameOver && (
-              <button
-                className="danger"
-                onClick={() =>
-                  socket.emit("resign", {}, (res) => {
-                    if (!res?.ok) setNotice(res?.error || "Could not resign");
-                  })
-                }
-              >
-                Resign
-              </button>
+              <>
+                <button
+                  className="danger"
+                  onClick={() =>
+                    socket.emit("resign", {}, (res) => {
+                      if (!res?.ok) setNotice(res?.error || "ยอมแพ้ไม่สำเร็จ");
+                    })
+                  }
+                >
+                  ยอมแพ้
+                </button>
+                {incomingDrawOffer ? (
+                  <>
+                    <button
+                      className="primary"
+                      onClick={() =>
+                        socket.emit("acceptDraw", {}, (res) => {
+                          if (!res?.ok)
+                            setNotice(res?.error || "ยอมเสมอไม่สำเร็จ");
+                        })
+                      }
+                    >
+                      ยอมเสมอ
+                    </button>
+                    <button
+                      onClick={() =>
+                        socket.emit("declineDraw", {}, (res) => {
+                          if (!res?.ok)
+                            setNotice(res?.error || "ปฏิเสธไม่สำเร็จ");
+                        })
+                      }
+                    >
+                      ปฏิเสธเสมอ
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() =>
+                      socket.emit("offerDraw", {}, (res) => {
+                        if (!res?.ok)
+                          setNotice(res?.error || "เสนอเสมอไม่สำเร็จ");
+                        else setNotice("เสนอเสมอแล้ว — รอคู่ต่อสู้ตอบ");
+                      })
+                    }
+                  >
+                    เสนอเสมอ
+                  </button>
+                )}
+              </>
             )}
             {gameOver && color !== "spectator" && (
               <button
                 className="primary"
                 onClick={() =>
                   socket.emit("rematch", {}, (res) => {
-                    if (!res?.ok) setNotice(res?.error || "Could not rematch");
+                    if (!res?.ok) setNotice(res?.error || "เริ่มใหม่ไม่สำเร็จ");
                   })
                 }
               >
-                Rematch
+                เล่นอีกครั้ง
               </button>
             )}
+            {gameOver && state?.pgn && (
+              <>
+                <button type="button" onClick={handleCopyPgn}>
+                  คัดลอก PGN
+                </button>
+                <button type="button" onClick={handleDownloadPgn}>
+                  ดาวน์โหลด PGN
+                </button>
+              </>
+            )}
             <button type="button" onClick={goHome}>
-              Home
+              หน้าแรก
             </button>
           </div>
+
+          {pgnNotice && <p className="notice">{pgnNotice}</p>}
 
           <MoveList history={state?.history || []} />
 
