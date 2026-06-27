@@ -11,6 +11,7 @@ export const FINISHED_STATUSES = new Set([
   "resign",
   "stalemate",
   "draw",
+  "draw_agreed",
   "insufficient_material",
   "threefold_repetition",
   "opponent_left",

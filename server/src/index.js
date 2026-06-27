@@ -3,6 +3,7 @@ import cors from "cors";
 import http from "node:http";
 import path from "node:path";
 import fs from "node:fs";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { Server } from "socket.io";
 import { Chess } from "chess.js";
@@ -21,6 +22,7 @@ const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
 const MAX_CHAT_LENGTH = 200;
 const MAX_CHAT_MESSAGES = 100;
+const DISCONNECT_GRACE_MS = 120_000;
 
 function sanitizeChatText(text) {
   if (typeof text !== "string") return "";
@@ -58,6 +60,8 @@ function createRoom(timeControlKey = "none") {
     chess: new Chess(),
     players: { white: null, black: null },
     names: { white: null, black: null },
+    playerTokens: { white: null, black: null },
+    disconnectTimers: { white: null, black: null },
     timeControlKey: timeControl ? timeControlKey : "none",
     timeControl,
     clocks: timeControl
@@ -67,6 +71,8 @@ function createRoom(timeControlKey = "none") {
     lastTickAt: null,
     gameOver: null,
     chat: [],
+    drawOffer: null,
+    lastMove: null,
   };
   return room;
 }
@@ -86,6 +92,24 @@ function colorOf(room, socketId) {
   return null;
 }
 
+function colorByToken(room, token) {
+  if (!token) return null;
+  if (room.playerTokens.white === token) return "white";
+  if (room.playerTokens.black === token) return "black";
+  return null;
+}
+
+function clearDisconnectTimer(room, color) {
+  if (room.disconnectTimers[color]) {
+    clearTimeout(room.disconnectTimers[color]);
+    room.disconnectTimers[color] = null;
+  }
+}
+
+function seatOccupied(room, color) {
+  return Boolean(room.players[color] || room.names[color]);
+}
+
 function buildState(room) {
   const chess = room.chess;
   const derived = deriveChessStatus(chess);
@@ -103,7 +127,14 @@ function buildState(room) {
     status,
     winner,
     history: chess.history(),
+    pgn: chess.pgn(),
+    lastMove: room.lastMove,
+    drawOffer: room.drawOffer,
     players: {
+      white: seatOccupied(room, "white"),
+      black: seatOccupied(room, "black"),
+    },
+    connected: {
       white: Boolean(room.players.white),
       black: Boolean(room.players.black),
     },
@@ -126,13 +157,20 @@ function setGameOver(room, status, winner) {
   room.gameOver = { status, winner };
   room.clockRunning = false;
   room.lastTickAt = null;
+  room.drawOffer = null;
+}
+
+function clearSeat(room, color) {
+  clearDisconnectTimer(room, color);
+  room.players[color] = null;
+  room.names[color] = null;
+  room.playerTokens[color] = null;
 }
 
 function declareOpponentWin(room, roomId, leavingColor) {
   if (isGameFinished(room)) return;
   const winner = leavingColor === "white" ? "black" : "white";
-  const opponentId = room.players[winner];
-  if (!opponentId) return;
+  if (!seatOccupied(room, winner)) return;
   setGameOver(room, "opponent_left", winner);
   io.to(roomId).emit("gameOver", {
     status: "opponent_left",
@@ -157,8 +195,10 @@ function removePlayerFromRoom(socket, { awardWin = true } = {}) {
 
   if (!color) return;
 
+  clearDisconnectTimer(room, color);
   room.players[color] = null;
   room.names[color] = null;
+  room.playerTokens[color] = null;
 
   if (awardWin) {
     declareOpponentWin(room, roomId, color);
@@ -166,58 +206,117 @@ function removePlayerFromRoom(socket, { awardWin = true } = {}) {
     socket.to(roomId).emit("opponentLeft", { color });
   }
 
-  if (!room.players.white && !room.players.black) {
+  if (!seatOccupied(room, "white") && !seatOccupied(room, "black")) {
     rooms.delete(roomId);
   } else if (!awardWin || isGameFinished(room)) {
     broadcastState(roomId);
   }
 }
 
+function handlePlayerDisconnect(socket) {
+  const roomId = socket.data.roomId;
+  if (!roomId) return;
+
+  const room = rooms.get(roomId);
+  if (!room) {
+    socket.data.roomId = null;
+    return;
+  }
+
+  const color = colorOf(room, socket.id);
+  socket.leave(roomId);
+  socket.data.roomId = null;
+
+  if (!color) return;
+
+  if (isGameFinished(room)) {
+    room.players[color] = null;
+    broadcastState(roomId);
+    return;
+  }
+
+  room.players[color] = null;
+  broadcastState(roomId);
+  socket.to(roomId).emit("opponentDisconnected", { color });
+
+  clearDisconnectTimer(room, color);
+  room.disconnectTimers[color] = setTimeout(() => {
+    room.disconnectTimers[color] = null;
+    if (room.players[color]) return;
+    const lostColor = color;
+    room.names[lostColor] = null;
+    room.playerTokens[lostColor] = null;
+    declareOpponentWin(room, roomId, lostColor);
+    if (!seatOccupied(room, "white") && !seatOccupied(room, "black")) {
+      rooms.delete(roomId);
+    }
+  }, DISCONNECT_GRACE_MS);
+}
+
 io.on("connection", (socket) => {
   socket.data.roomId = null;
 
-  socket.on("joinGame", ({ roomId, name, timeControl } = {}, ack) => {
-    if (!roomId || typeof roomId !== "string") {
-      ack?.({ ok: false, error: "Invalid room id" });
-      return;
-    }
+  socket.on(
+    "joinGame",
+    ({ roomId, name, timeControl, reconnectToken } = {}, ack) => {
+      if (!roomId || typeof roomId !== "string") {
+        ack?.({ ok: false, error: "รหัสห้องไม่ถูกต้อง" });
+        return;
+      }
 
-    if (socket.data.roomId && socket.data.roomId !== roomId) {
-      removePlayerFromRoom(socket, { awardWin: true });
-    }
+      if (socket.data.roomId && socket.data.roomId !== roomId) {
+        removePlayerFromRoom(socket, { awardWin: true });
+      }
 
-    const isNew = !rooms.has(roomId);
-    const room = getOrCreateRoom(
-      roomId,
-      isNew ? timeControl || "none" : "none"
-    );
+      const isNew = !rooms.has(roomId);
+      const room = getOrCreateRoom(
+        roomId,
+        isNew ? timeControl || "none" : "none"
+      );
 
-    let color = colorOf(room, socket.id);
-    if (!color) {
-      if (!room.players.white) {
-        room.players.white = socket.id;
-        color = "white";
-      } else if (!room.players.black) {
-        room.players.black = socket.id;
-        color = "black";
+      let color = colorOf(room, socket.id);
+      const reclaimColor = colorByToken(room, reconnectToken);
+
+      if (!color && reclaimColor && seatOccupied(room, reclaimColor)) {
+        clearDisconnectTimer(room, reclaimColor);
+        room.players[reclaimColor] = socket.id;
+        color = reclaimColor;
+        if (name?.trim()) room.names[reclaimColor] = name.trim();
+      } else if (!color) {
+        if (!seatOccupied(room, "white")) {
+          room.players.white = socket.id;
+          room.playerTokens.white = randomUUID();
+          color = "white";
+        } else if (!seatOccupied(room, "black")) {
+          room.players.black = socket.id;
+          room.playerTokens.black = randomUUID();
+          color = "black";
+        }
+      }
+
+      if (color) {
+        room.names[color] = name?.trim() || `ผู้เล่น${color === "white" ? "ขาว" : "ดำ"}`;
+      }
+      socket.data.displayName = name?.trim() || "ไม่ระบุชื่อ";
+
+      socket.data.roomId = roomId;
+      socket.join(roomId);
+
+      ack?.({
+        ok: true,
+        color: color || "spectator",
+        token: color ? room.playerTokens[color] : null,
+        state: buildState(room),
+      });
+
+      broadcastState(roomId);
+      if (color && reclaimColor) {
+        socket.to(roomId).emit("opponentReconnected", { color });
+      } else if (color) {
+        socket.to(roomId).emit("opponentJoined", { color });
       }
     }
-
-    if (color) room.names[color] = name || `Player ${color}`;
-    socket.data.displayName = name?.trim() || "Anonymous";
-
-    socket.data.roomId = roomId;
-    socket.join(roomId);
-
-    ack?.({
-      ok: true,
-      color: color || "spectator",
-      state: buildState(room),
-    });
-
-    broadcastState(roomId);
-    if (color) socket.to(roomId).emit("opponentJoined", { color });
-  });
+  );
 
   socket.on("leaveGame", (_payload, ack) => {
     removePlayerFromRoom(socket, { awardWin: true });
@@ -227,34 +326,34 @@ io.on("connection", (socket) => {
   socket.on("move", ({ from, to, promotion } = {}, ack) => {
     const roomId = socket.data.roomId;
     if (!roomId) {
-      ack?.({ ok: false, error: "Not in a room" });
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
       return;
     }
 
     const room = rooms.get(roomId);
     if (!room) {
-      ack?.({ ok: false, error: "Room not found" });
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
       return;
     }
 
     if (isGameFinished(room)) {
-      ack?.({ ok: false, error: "Game is over" });
+      ack?.({ ok: false, error: "เกมจบแล้ว" });
       return;
     }
 
     const color = colorOf(room, socket.id);
     if (!color) {
-      ack?.({ ok: false, error: "You are a spectator" });
+      ack?.({ ok: false, error: "คุณเป็นผู้ชม" });
       return;
     }
 
     const turnColor = room.chess.turn() === "w" ? "white" : "black";
     if (color !== turnColor) {
-      ack?.({ ok: false, error: "Not your turn" });
+      ack?.({ ok: false, error: "ยังไม่ถึงตาคุณ" });
       return;
     }
 
-    if (room.timeControl && room.players.white && room.players.black) {
+    if (room.timeControl && seatOccupied(room, "white") && seatOccupied(room, "black")) {
       if (!room.clockRunning) {
         startClockIfNeeded(room);
       } else {
@@ -262,7 +361,7 @@ io.on("connection", (socket) => {
         if (timedOut) {
           const winner = timedOut === "white" ? "black" : "white";
           setGameOver(room, "timeout", winner);
-          ack?.({ ok: false, error: "Time is up" });
+          ack?.({ ok: false, error: "หมดเวลา" });
           io.to(roomId).emit("gameOver", { status: "timeout", winner });
           broadcastState(roomId);
           return;
@@ -278,10 +377,18 @@ io.on("connection", (socket) => {
     }
 
     if (!result) {
-      ack?.({ ok: false, error: "Illegal move" });
+      ack?.({ ok: false, error: "เดินหมากไม่ได้" });
       return;
     }
 
+    room.lastMove = {
+      from: result.from,
+      to: result.to,
+      san: result.san,
+      captured: result.captured || null,
+      flags: result.flags,
+    };
+    room.drawOffer = null;
     applyIncrement(room, color);
 
     ack?.({ ok: true });
@@ -291,24 +398,24 @@ io.on("connection", (socket) => {
   socket.on("resign", (_payload, ack) => {
     const roomId = socket.data.roomId;
     if (!roomId) {
-      ack?.({ ok: false, error: "Not in a room" });
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
       return;
     }
 
     const room = rooms.get(roomId);
     if (!room) {
-      ack?.({ ok: false, error: "Room not found" });
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
       return;
     }
 
     const color = colorOf(room, socket.id);
     if (!color) {
-      ack?.({ ok: false, error: "You are a spectator" });
+      ack?.({ ok: false, error: "คุณเป็นผู้ชม" });
       return;
     }
 
     if (isGameFinished(room)) {
-      ack?.({ ok: false, error: "Game is over" });
+      ack?.({ ok: false, error: "เกมจบแล้ว" });
       return;
     }
 
@@ -319,21 +426,112 @@ io.on("connection", (socket) => {
     broadcastState(roomId);
   });
 
-  socket.on("rematch", (_payload, ack) => {
+  socket.on("offerDraw", (_payload, ack) => {
     const roomId = socket.data.roomId;
     if (!roomId) {
-      ack?.({ ok: false, error: "Not in a room" });
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
       return;
     }
 
     const room = rooms.get(roomId);
     if (!room) {
-      ack?.({ ok: false, error: "Room not found" });
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    if (!color) {
+      ack?.({ ok: false, error: "คุณเป็นผู้ชม" });
+      return;
+    }
+
+    if (isGameFinished(room)) {
+      ack?.({ ok: false, error: "เกมจบแล้ว" });
+      return;
+    }
+
+    room.drawOffer = color;
+    ack?.({ ok: true });
+    broadcastState(roomId);
+  });
+
+  socket.on("acceptDraw", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    if (!color) {
+      ack?.({ ok: false, error: "คุณเป็นผู้ชม" });
+      return;
+    }
+
+    if (isGameFinished(room)) {
+      ack?.({ ok: false, error: "เกมจบแล้ว" });
+      return;
+    }
+
+    if (!room.drawOffer || room.drawOffer === color) {
+      ack?.({ ok: false, error: "ไม่มีข้อเสนอเสมอ" });
+      return;
+    }
+
+    setGameOver(room, "draw_agreed", null);
+    ack?.({ ok: true });
+    io.to(roomId).emit("gameOver", { status: "draw_agreed", winner: null });
+    broadcastState(roomId);
+  });
+
+  socket.on("declineDraw", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    if (!color) {
+      ack?.({ ok: false, error: "คุณเป็นผู้ชม" });
+      return;
+    }
+
+    if (room.drawOffer && room.drawOffer !== color) {
+      room.drawOffer = null;
+      broadcastState(roomId);
+    }
+
+    ack?.({ ok: true });
+  });
+
+  socket.on("rematch", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
       return;
     }
 
     if (!colorOf(room, socket.id)) {
-      ack?.({ ok: false, error: "Only players can rematch" });
+      ack?.({ ok: false, error: "เฉพาะผู้เล่นเท่านั้น" });
       return;
     }
 
@@ -341,6 +539,8 @@ io.on("connection", (socket) => {
     room.gameOver = null;
     room.clockRunning = false;
     room.lastTickAt = null;
+    room.drawOffer = null;
+    room.lastMove = null;
     resetClocks(room);
 
     ack?.({ ok: true });
@@ -351,19 +551,19 @@ io.on("connection", (socket) => {
   socket.on("chatMessage", ({ text } = {}, ack) => {
     const roomId = socket.data.roomId;
     if (!roomId) {
-      ack?.({ ok: false, error: "Not in a room" });
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
       return;
     }
 
     const room = rooms.get(roomId);
     if (!room) {
-      ack?.({ ok: false, error: "Room not found" });
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
       return;
     }
 
     const sanitized = sanitizeChatText(text);
     if (!sanitized) {
-      ack?.({ ok: false, error: "Empty message" });
+      ack?.({ ok: false, error: "ข้อความว่าง" });
       return;
     }
 
@@ -373,7 +573,7 @@ io.on("connection", (socket) => {
       name:
         (color && room.names[color]) ||
         socket.data.displayName ||
-        "Anonymous",
+        "ไม่ระบุชื่อ",
       color: color || "spectator",
       text: sanitized,
       ts: Date.now(),
@@ -389,7 +589,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    removePlayerFromRoom(socket, { awardWin: true });
+    handlePlayerDisconnect(socket);
   });
 });
 

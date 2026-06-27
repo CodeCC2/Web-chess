@@ -770,9 +770,82 @@ button.link {
 /* Puzzle mode */
 .puzzle-picker-actions {
   display: flex;
-  gap: 10px;
+  align-items: center;
   justify-content: center;
+  gap: 12px;
   margin: 16px 0 24px;
+}
+
+.puzzle-filter-count {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.puzzle-filters {
+  margin-bottom: 16px;
+}
+
+.puzzle-filters label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.puzzle-stats {
+  margin-bottom: 16px;
+}
+
+.puzzle-stats-title {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: #e5e7eb;
+}
+
+.puzzle-stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.puzzle-stat {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 90px;
+}
+
+.puzzle-stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.puzzle-stat-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.puzzle-stats-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.puzzle-stat-chip {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.draw-offer-notice {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  background: rgba(250, 204, 21, 0.15);
+  border-radius: 6px;
+  color: #fde68a;
+  font-size: 0.9rem;
 }
 
 .puzzle-card .lesson-card-header {
