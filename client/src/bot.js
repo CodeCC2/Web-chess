@@ -74,13 +74,16 @@ export const DIFFICULTY_LABELS = {
   expert: "Expert",
 };
 
-/** Minimum UI delay before bot moves (expert search time is separate). */
+/** Minimum UI delay before bot starts thinking (expert search is async). */
 export const THINK_MS = {
   easy: 250,
   medium: 350,
   hard: 500,
-  expert: 0,
+  expert: 150,
 };
+
+/** Wait for react-chessboard slide animation before the bot updates position. */
+export const BOT_ANIMATION_MS = 300;
 
 const CONFIG = {
   medium: { depth: 2, mistake: 0.12 },
@@ -225,6 +228,43 @@ function getExpertMove(game) {
   return toMove(bestMove);
 }
 
+/** Expert search that yields between depths so piece animations stay smooth. */
+function getExpertMoveAsync(game) {
+  const { timeMs, maxDepth } = CONFIG.expert;
+  searchDeadline = Date.now() + timeMs;
+
+  const moves = orderedMoves(game);
+  let bestMove = moves[0];
+  let depth = 1;
+
+  return new Promise((resolve) => {
+    const step = () => {
+      if (timedOut() || depth > maxDepth) {
+        resolve(toMove(bestMove));
+        return;
+      }
+
+      const { move, score, completed } = searchAtDepth(game, depth, true);
+      if (move && completed) {
+        bestMove = move;
+        if (Math.abs(score) > MATE - 1000) {
+          resolve(toMove(bestMove));
+          return;
+        }
+      }
+
+      depth += 1;
+      if (timedOut()) {
+        resolve(toMove(bestMove));
+        return;
+      }
+      setTimeout(step, 0);
+    };
+
+    setTimeout(step, 0);
+  });
+}
+
 /**
  * @param {string} fen
  * @param {"easy"|"medium"|"hard"|"expert"} difficulty
@@ -240,4 +280,26 @@ export function getBotMove(fen, difficulty = "medium") {
 
   const { depth, mistake } = CONFIG[difficulty] ?? CONFIG.hard;
   return getFixedDepthMove(game, depth, mistake);
+}
+
+/**
+ * Async bot move — expert yields to the browser between search depths.
+ * @param {string} fen
+ * @param {"easy"|"medium"|"hard"|"expert"} difficulty
+ */
+export function getBotMoveAsync(fen, difficulty = "medium") {
+  const game = new Chess(fen);
+  const legal = game.moves({ verbose: true });
+  if (legal.length === 0) return Promise.resolve(null);
+
+  if (difficulty === "easy") {
+    return Promise.resolve(toMove(randomChoice(legal)));
+  }
+
+  if (difficulty === "expert") {
+    return getExpertMoveAsync(game);
+  }
+
+  const { depth, mistake } = CONFIG[difficulty] ?? CONFIG.hard;
+  return Promise.resolve(getFixedDepthMove(game, depth, mistake));
 }

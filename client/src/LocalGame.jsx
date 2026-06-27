@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
-import { getBotMove, DIFFICULTY_LABELS, THINK_MS } from "./bot.js";
+import { getBotMoveAsync, DIFFICULTY_LABELS, THINK_MS, BOT_ANIMATION_MS } from "./bot.js";
 import MoveList from "./MoveList.jsx";
 import PromotionPicker from "./PromotionPicker.jsx";
 import { useChessBoardInteraction } from "./useChessBoardInteraction.js";
@@ -107,15 +107,22 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
 
     const gen = ++botMoveGenRef.current;
     setThinking(true);
-    const delay = THINK_MS[difficulty] ?? 450;
+    const delay = (THINK_MS[difficulty] ?? 450) + BOT_ANIMATION_MS;
+    let cancelled = false;
+
     const timer = setTimeout(() => {
       if (gen !== botMoveGenRef.current) return;
-      const mv = getBotMove(game.fen(), difficulty);
-      if (gen === botMoveGenRef.current && mv) commitMove(mv);
-      if (gen === botMoveGenRef.current) setThinking(false);
+      getBotMoveAsync(game.fen(), difficulty).then((mv) => {
+        if (cancelled || gen !== botMoveGenRef.current) return;
+        if (mv) commitMove(mv);
+        if (gen === botMoveGenRef.current) setThinking(false);
+      });
     }, delay);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [fen, botColor, difficulty, commitMove]);
 
   const getGame = useCallback(() => gameRef.current, []);
@@ -253,6 +260,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
           <Chessboard
             id="local-board"
             position={fen}
+            animationDuration={BOT_ANIMATION_MS}
             onPieceDrop={onPieceDrop}
             onSquareClick={onSquareClick}
             onPromotionCheck={() => false}
