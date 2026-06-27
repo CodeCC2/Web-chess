@@ -17,6 +17,8 @@ import {
   startClockIfNeeded,
   resetClocks,
 } from "./roomUtils.js";
+import { registerAdminRoutes } from "./admin.js";
+import { logPlayerSession, clientIpFromSocket } from "./supabase.js";
 
 const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
@@ -30,11 +32,15 @@ function sanitizeChatText(text) {
 }
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(cors({ origin: CLIENT_ORIGIN }));
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", rooms: rooms.size });
 });
+
+registerAdminRoutes(app);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");
@@ -179,6 +185,16 @@ function declareOpponentWin(room, roomId, leavingColor) {
   broadcastState(roomId);
 }
 
+function sessionLog(socket, event, { roomId, color, name } = {}) {
+  void logPlayerSession({
+    name: name || socket.data.displayName || "ไม่ระบุชื่อ",
+    roomId: roomId ?? socket.data.roomId ?? null,
+    color: color ?? null,
+    ip: socket.data.clientIp ?? clientIpFromSocket(socket),
+    event,
+  });
+}
+
 function removePlayerFromRoom(socket, { awardWin = true } = {}) {
   const roomId = socket.data.roomId;
   if (!roomId) return;
@@ -190,10 +206,16 @@ function removePlayerFromRoom(socket, { awardWin = true } = {}) {
   }
 
   const color = colorOf(room, socket.id);
+  const playerName = color
+    ? room.names[color] || socket.data.displayName
+    : socket.data.displayName;
+
   socket.leave(roomId);
   socket.data.roomId = null;
 
   if (!color) return;
+
+  sessionLog(socket, "leave", { roomId, color, name: playerName });
 
   clearDisconnectTimer(room, color);
   room.players[color] = null;
@@ -224,10 +246,16 @@ function handlePlayerDisconnect(socket) {
   }
 
   const color = colorOf(room, socket.id);
+  const playerName = color
+    ? room.names[color] || socket.data.displayName
+    : socket.data.displayName;
+
   socket.leave(roomId);
   socket.data.roomId = null;
 
   if (!color) return;
+
+  sessionLog(socket, "disconnect", { roomId, color, name: playerName });
 
   if (isGameFinished(room)) {
     room.players[color] = null;
@@ -255,6 +283,7 @@ function handlePlayerDisconnect(socket) {
 
 io.on("connection", (socket) => {
   socket.data.roomId = null;
+  socket.data.clientIp = clientIpFromSocket(socket);
 
   socket.on(
     "joinGame",
@@ -310,6 +339,16 @@ io.on("connection", (socket) => {
       });
 
       broadcastState(roomId);
+
+      sessionLog(socket, "join", {
+        roomId,
+        color: color || "spectator",
+        name:
+          (color && room.names[color]) ||
+          socket.data.displayName ||
+          "ไม่ระบุชื่อ",
+      });
+
       if (color && reclaimColor) {
         socket.to(roomId).emit("opponentReconnected", { color });
       } else if (color) {
