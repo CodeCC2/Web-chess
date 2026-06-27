@@ -3,12 +3,7 @@ const BOARD_STYLE = {
   boxShadow: "var(--shadow-board)",
 };
 
-const SQUARES = {
-  customDarkSquareStyle: { backgroundColor: "#779556" },
-  customLightSquareStyle: { backgroundColor: "#ebecd0" },
-};
-
-export { BOARD_STYLE, SQUARES };
+export { BOARD_STYLE };
 
 export function boardWidth() {
   return Math.min(480, window.innerWidth - 32);

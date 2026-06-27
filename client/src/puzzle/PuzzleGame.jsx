@@ -9,7 +9,9 @@ import {
   classifyMoveSound,
 } from "../boardFeedback.js";
 import { needsPromotion } from "../promotionUtils.js";
-import { BOARD_STYLE, SQUARES, boardWidth } from "../boardTheme.js";
+import { BOARD_STYLE, boardWidth } from "../boardTheme.js";
+import SettingsButton from "../components/SettingsButton.jsx";
+import { useSettings } from "../SettingsContext.jsx";
 import { markPuzzleComplete } from "./puzzles.js";
 
 const HINT_FROM_STYLE = {
@@ -27,6 +29,7 @@ const WRONG_STYLE = {
 };
 
 export default function PuzzleGame({ puzzle, onExit, onNext }) {
+  const { squareStyles } = useSettings();
   const gameRef = useRef(new Chess(puzzle.fen));
   const playerColor = useRef(
     puzzle.fen.includes(" w ") ? "w" : "b"
@@ -306,6 +309,7 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
           <button type="button" className="home-btn" onClick={onExit}>
             หน้าแรก
           </button>
+          <SettingsButton className="settings-fab header-settings" />
         </div>
       </header>
 
@@ -325,7 +329,7 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
             customArrows={hintArrows}
             boardWidth={boardWidth()}
             customBoardStyle={BOARD_STYLE}
-            {...SQUARES}
+            {...squareStyles}
             animationDuration={300}
           />
           {pendingPromotion && (

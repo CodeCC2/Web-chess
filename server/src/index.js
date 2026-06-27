@@ -72,6 +72,8 @@ function createRoom(timeControlKey = "none") {
     gameOver: null,
     chat: [],
     drawOffer: null,
+    takebackOffer: null,
+    rematchOffer: null,
     lastMove: null,
   };
   return room;
@@ -130,6 +132,8 @@ function buildState(room) {
     pgn: chess.pgn(),
     lastMove: room.lastMove,
     drawOffer: room.drawOffer,
+    takebackOffer: room.takebackOffer,
+    rematchOffer: room.rematchOffer,
     players: {
       white: seatOccupied(room, "white"),
       black: seatOccupied(room, "black"),
@@ -158,6 +162,35 @@ function setGameOver(room, status, winner) {
   room.clockRunning = false;
   room.lastTickAt = null;
   room.drawOffer = null;
+  room.takebackOffer = null;
+}
+
+function syncLastMoveFromHistory(room) {
+  const hist = room.chess.history({ verbose: true });
+  if (hist.length === 0) {
+    room.lastMove = null;
+    return;
+  }
+  const result = hist[hist.length - 1];
+  room.lastMove = {
+    from: result.from,
+    to: result.to,
+    san: result.san,
+    captured: result.captured || null,
+    flags: result.flags,
+  };
+}
+
+function resetGameRoom(room) {
+  room.chess = new Chess();
+  room.gameOver = null;
+  room.clockRunning = false;
+  room.lastTickAt = null;
+  room.drawOffer = null;
+  room.takebackOffer = null;
+  room.rematchOffer = null;
+  room.lastMove = null;
+  resetClocks(room);
 }
 
 function clearSeat(room, color) {
@@ -389,6 +422,7 @@ io.on("connection", (socket) => {
       flags: result.flags,
     };
     room.drawOffer = null;
+    room.takebackOffer = null;
     applyIncrement(room, color);
 
     ack?.({ ok: true });
@@ -517,7 +551,7 @@ io.on("connection", (socket) => {
     ack?.({ ok: true });
   });
 
-  socket.on("rematch", (_payload, ack) => {
+  socket.on("requestTakeback", (_payload, ack) => {
     const roomId = socket.data.roomId;
     if (!roomId) {
       ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
@@ -530,22 +564,185 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (!colorOf(room, socket.id)) {
+    const color = colorOf(room, socket.id);
+    if (!color) {
+      ack?.({ ok: false, error: "คุณเป็นผู้ชม" });
+      return;
+    }
+
+    if (isGameFinished(room)) {
+      ack?.({ ok: false, error: "เกมจบแล้ว" });
+      return;
+    }
+
+    if (room.chess.history().length === 0) {
+      ack?.({ ok: false, error: "ยังไม่มีตาที่ถอยได้" });
+      return;
+    }
+
+    room.takebackOffer = color;
+    ack?.({ ok: true });
+    broadcastState(roomId);
+  });
+
+  socket.on("acceptTakeback", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    if (!color) {
+      ack?.({ ok: false, error: "คุณเป็นผู้ชม" });
+      return;
+    }
+
+    if (isGameFinished(room)) {
+      ack?.({ ok: false, error: "เกมจบแล้ว" });
+      return;
+    }
+
+    if (!room.takebackOffer || room.takebackOffer === color) {
+      ack?.({ ok: false, error: "ไม่มีคำขอถอยตา" });
+      return;
+    }
+
+    if (room.chess.history().length === 0) {
+      ack?.({ ok: false, error: "ยังไม่มีตาที่ถอยได้" });
+      return;
+    }
+
+    room.chess.undo();
+    room.takebackOffer = null;
+    room.drawOffer = null;
+    syncLastMoveFromHistory(room);
+    ack?.({ ok: true });
+    broadcastState(roomId);
+  });
+
+  socket.on("declineTakeback", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    if (!color) {
+      ack?.({ ok: false, error: "คุณเป็นผู้ชม" });
+      return;
+    }
+
+    if (room.takebackOffer && room.takebackOffer !== color) {
+      room.takebackOffer = null;
+      broadcastState(roomId);
+    }
+
+    ack?.({ ok: true });
+  });
+
+  socket.on("offerRematch", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    if (!color) {
       ack?.({ ok: false, error: "เฉพาะผู้เล่นเท่านั้น" });
       return;
     }
 
-    room.chess = new Chess();
-    room.gameOver = null;
-    room.clockRunning = false;
-    room.lastTickAt = null;
-    room.drawOffer = null;
-    room.lastMove = null;
-    resetClocks(room);
+    if (!isGameFinished(room)) {
+      ack?.({ ok: false, error: "เกมยังไม่จบ" });
+      return;
+    }
 
+    room.rematchOffer = color;
+    ack?.({ ok: true });
+    broadcastState(roomId);
+  });
+
+  socket.on("acceptRematch", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    if (!color) {
+      ack?.({ ok: false, error: "เฉพาะผู้เล่นเท่านั้น" });
+      return;
+    }
+
+    if (!isGameFinished(room)) {
+      ack?.({ ok: false, error: "เกมยังไม่จบ" });
+      return;
+    }
+
+    if (!room.rematchOffer || room.rematchOffer === color) {
+      ack?.({ ok: false, error: "ไม่มีคำขอเล่นอีกครั้ง" });
+      return;
+    }
+
+    resetGameRoom(room);
     ack?.({ ok: true });
     broadcastState(roomId);
     io.to(roomId).emit("rematchStarted");
+  });
+
+  socket.on("declineRematch", (_payload, ack) => {
+    const roomId = socket.data.roomId;
+    if (!roomId) {
+      ack?.({ ok: false, error: "ไม่ได้อยู่ในห้อง" });
+      return;
+    }
+
+    const room = rooms.get(roomId);
+    if (!room) {
+      ack?.({ ok: false, error: "ไม่พบห้อง" });
+      return;
+    }
+
+    const color = colorOf(room, socket.id);
+    if (!color) {
+      ack?.({ ok: false, error: "เฉพาะผู้เล่นเท่านั้น" });
+      return;
+    }
+
+    if (room.rematchOffer && room.rematchOffer !== color) {
+      room.rematchOffer = null;
+      broadcastState(roomId);
+    }
+
+    ack?.({ ok: true });
   });
 
   socket.on("chatMessage", ({ text } = {}, ack) => {
