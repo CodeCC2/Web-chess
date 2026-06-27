@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import ScreenHeader from "../ScreenHeader.jsx";
+import AppBrand from "../components/AppBrand.jsx";
 import {
   puzzles,
   getCompletedPuzzles,
@@ -63,6 +63,9 @@ export default function PuzzlePicker({ onSelect, onRandom, onHome }) {
         className={`lesson-card puzzle-card${done ? " done" : ""}`}
         onClick={() => onSelect(puzzle)}
       >
+        <span className="puzzle-card-icon-bg" aria-hidden="true">
+          {puzzle.icon}
+        </span>
         <div className="lesson-card-header">
           <span className="lesson-icon">{puzzle.icon}</span>
           <span className="puzzle-theme-badge">{puzzle.themeLabel}</span>
@@ -81,12 +84,15 @@ export default function PuzzlePicker({ onSelect, onRandom, onHome }) {
   };
 
   return (
-    <div className="app lobby">
-      <ScreenHeader title="♞ Puzzle" onHome={onHome} />
-      <p className="subtitle">
-        ฝึกแท็กติก — หาตาที่ดีที่สุด ({stats.doneCount}/{puzzles.length}{" "}
-        ผ่านแล้ว)
-      </p>
+    <div className="app lobby puzzle-lobby">
+      <div className="lobby-hero">
+        <AppBrand subtitle="ฝึกแท็กติก — หาตาที่ดีที่สุด" />
+      </div>
+      <div className="puzzle-picker-topbar">
+        <button type="button" className="home-btn" onClick={onHome}>
+          หน้าแรก
+        </button>
+      </div>
 
       <div className="puzzle-stats card">
         <h3 className="puzzle-stats-title">สถิติ</h3>

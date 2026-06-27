@@ -9,6 +9,7 @@ import {
   classifyMoveSound,
 } from "../boardFeedback.js";
 import { needsPromotion } from "../promotionUtils.js";
+import { BOARD_STYLE, SQUARES, boardWidth } from "../boardTheme.js";
 import { markPuzzleComplete } from "./puzzles.js";
 
 const HINT_FROM_STYLE = {
@@ -303,13 +304,13 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
             {puzzle.icon} <strong>{puzzle.title}</strong>
           </div>
           <button type="button" className="home-btn" onClick={onExit}>
-            Home
+            หน้าแรก
           </button>
         </div>
       </header>
 
       <div className="game-body">
-        <div className="board-wrap">
+        <div className={`board-wrap${successFlash ? " puzzle-success" : ""}`}>
           <Chessboard
             id="puzzle-board"
             position={fen}
@@ -322,14 +323,10 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
             }
             customSquareStyles={customSquareStyles}
             customArrows={hintArrows}
-            boardWidth={Math.min(480, window.innerWidth - 32)}
-            customBoardStyle={{
-              borderRadius: "8px",
-              boxShadow: successFlash
-                ? "0 0 24px rgba(52, 211, 153, 0.6)"
-                : "0 4px 20px rgba(0,0,0,0.35)",
-              transition: "box-shadow 0.3s ease",
-            }}
+            boardWidth={boardWidth()}
+            customBoardStyle={BOARD_STYLE}
+            {...SQUARES}
+            animationDuration={300}
           />
           {pendingPromotion && (
             <PromotionPicker

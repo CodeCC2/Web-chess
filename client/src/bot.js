@@ -68,9 +68,9 @@ const PST = {
 
 /** 4 levels — expert uses timed iterative deepening (actually strong). */
 export const DIFFICULTY_LABELS = {
-  easy: "Easy",
-  medium: "Medium",
-  hard: "Hard",
+  easy: "ง่าย",
+  medium: "ปานกลาง",
+  hard: "ยาก",
   expert: "Expert",
 };
 

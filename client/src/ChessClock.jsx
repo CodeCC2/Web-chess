@@ -47,7 +47,7 @@ export default function ChessClock({
           display.white <= lowTimeMs ? "low" : ""
         }`}
       >
-        <span className="clock-label">White</span>
+        <span className="clock-label">ขาว</span>
         <span className="clock-time">{formatClock(display.white)}</span>
       </div>
       <div
@@ -55,7 +55,7 @@ export default function ChessClock({
           display.black <= lowTimeMs ? "low" : ""
         }`}
       >
-        <span className="clock-label">Black</span>
+        <span className="clock-label">ดำ</span>
         <span className="clock-time">{formatClock(display.black)}</span>
       </div>
       <div className="clock-control-badge">{timeControl}</div>
