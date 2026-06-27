@@ -1,12 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function cleanEnv(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+const url = cleanEnv(process.env.SUPABASE_URL).replace(/\/$/, "");
+const serviceKey = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 export const supabaseConfigured = Boolean(url && serviceKey);
 
 export const supabase = supabaseConfigured
-  ? createClient(url, serviceKey, { auth: { persistSession: false } })
+  ? createClient(url, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
   : null;
 
 if (!supabaseConfigured) {
@@ -15,17 +21,43 @@ if (!supabaseConfigured) {
   );
 }
 
+/** @param {unknown} err */
+export function formatSupabaseError(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  if (message.includes("fetch failed")) {
+    return [
+      "เชื่อม Supabase ไม่ได้ (fetch failed)",
+      "ตรวจสอบ: โปรเจกต์ Supabase ยังเปิดอยู่ไหม (ไม่ถูก Pause)",
+      "SUPABASE_URL ถูกต้องไหม (ไม่มีช่องว่าง/สแลชท้าย)",
+      "SUPABASE_SERVICE_ROLE_KEY copy ครบทั้งก้อนไหม",
+    ].join(" — ");
+  }
+  return message;
+}
+
+/** @param {unknown} err */
+export function logSupabaseError(context, err) {
+  console.error(context, err);
+  if (err instanceof Error && "cause" in err && err.cause) {
+    console.error(`${context} cause:`, err.cause);
+  }
+}
+
 /** @param {{ name: string, roomId?: string|null, color?: string|null, ip?: string|null, event?: string }} row */
 export async function logPlayerSession(row) {
   if (!supabase) return;
-  const { error } = await supabase.from("player_sessions").insert({
-    name: row.name,
-    room_id: row.roomId ?? null,
-    color: row.color ?? null,
-    ip: row.ip ?? null,
-    event: row.event || "join",
-  });
-  if (error) console.error("logPlayerSession:", error.message);
+  try {
+    const { error } = await supabase.from("player_sessions").insert({
+      name: row.name,
+      room_id: row.roomId ?? null,
+      color: row.color ?? null,
+      ip: row.ip ?? null,
+      event: row.event || "join",
+    });
+    if (error) console.error("logPlayerSession:", error.message);
+  } catch (err) {
+    logSupabaseError("logPlayerSession:", err);
+  }
 }
 
 export function clientIpFromSocket(socket) {

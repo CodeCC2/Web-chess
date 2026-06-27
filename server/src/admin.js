@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { supabase, supabaseConfigured } from "./supabase.js";
+import { supabase, supabaseConfigured, formatSupabaseError } from "./supabase.js";
 
 const COOKIE_NAME = "chess_admin";
 const SESSION_VERSION = "admin-v1";
@@ -131,6 +131,12 @@ async function fetchLogs(limit = 200) {
   return data || [];
 }
 
+function fetchLogsSafe(limit = 200) {
+  return fetchLogs(limit).catch((err) => {
+    throw new Error(formatSupabaseError(err));
+  });
+}
+
 function formatTime(iso) {
   try {
     return new Date(iso).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
@@ -211,7 +217,7 @@ export function registerAdminRoutes(app) {
       return;
     }
     try {
-      const rows = await fetchLogs();
+      const rows = await fetchLogsSafe();
       const flash = FLASH_MESSAGES[req.query.flash] || "";
       res.send(logsPage(rows, flash));
     } catch (err) {
