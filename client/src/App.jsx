@@ -249,6 +249,13 @@ export default function App() {
     const session = loadSession();
     if (!session?.roomId || !session?.token) return;
 
+    const params = new URLSearchParams(window.location.search);
+    const urlRoom = params.get("room")?.trim().toUpperCase();
+    if (urlRoom && urlRoom !== session.roomId.toUpperCase()) {
+      clearSession();
+      return;
+    }
+
     const tryReconnect = () => {
       if (reconnectAttempted.current) return;
       reconnectAttempted.current = true;
