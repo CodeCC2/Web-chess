@@ -23,6 +23,7 @@ import {
   classifyMoveSound,
 } from "./boardFeedback.js";
 import { saveSession, loadSession, clearSession } from "./gameSession.js";
+import { logClientSession } from "./sessionLog.js";
 import { copyPgn, downloadPgn } from "./pgnUtils.js";
 import AppBrand from "./components/AppBrand.jsx";
 import GameOverOverlay from "./components/GameOverOverlay.jsx";
@@ -130,6 +131,29 @@ export default function App() {
   stateRef.current = state;
   const prevHistoryLen = useRef(0);
   const reconnectAttempted = useRef(false);
+  const localSessionRef = useRef(null);
+
+  const beginLocalSession = useCallback((mode, detail, playerName = name) => {
+    localSessionRef.current = { mode, detail };
+    logClientSession({
+      mode,
+      event: "join",
+      name: playerName,
+      detail,
+    });
+  }, [name]);
+
+  const endLocalSession = useCallback((playerName = name) => {
+    const session = localSessionRef.current;
+    if (!session) return;
+    logClientSession({
+      mode: session.mode,
+      event: "leave",
+      name: playerName,
+      detail: session.detail,
+    });
+    localSessionRef.current = null;
+  }, [name]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -144,8 +168,9 @@ export default function App() {
           ? "white"
           : "black"
         : botColorChoice;
+    beginLocalSession("bot", `${difficulty}/${playerColor}`);
     setBotConfig({ difficulty, playerColor });
-  }, [botColorChoice, difficulty]);
+  }, [beginLocalSession, botColorChoice, difficulty]);
 
   const gameOver = useMemo(() => {
     if (!state) return null;
@@ -445,9 +470,10 @@ export default function App() {
 
   const pickRandomPuzzle = useCallback(() => {
     const puzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
+    beginLocalSession("puzzle", puzzle.theme || puzzle.id);
     setActivePuzzle(puzzle);
     setShowPuzzlePicker(false);
-  }, []);
+  }, [beginLocalSession]);
 
   const sendChat = useCallback((text) => {
     socket.emit("chatMessage", { text }, (res) => {
@@ -458,6 +484,8 @@ export default function App() {
   const goHome = useCallback(() => {
     if (roomId) {
       socket.emit("leaveGame", {}, () => {});
+    } else {
+      endLocalSession();
     }
     clearSession();
     reconnectAttempted.current = false;
@@ -475,7 +503,7 @@ export default function App() {
     setShowLessonPicker(false);
     setActivePuzzle(null);
     setShowPuzzlePicker(false);
-  }, [roomId, resetBoardUi]);
+  }, [roomId, resetBoardUi, endLocalSession]);
 
   const inviteUrl = roomId
     ? `${window.location.origin}${window.location.pathname}?room=${roomId}`
@@ -533,6 +561,7 @@ export default function App() {
     return (
       <PuzzlePicker
         onSelect={(puzzle) => {
+          beginLocalSession("puzzle", puzzle.themeLabel || puzzle.theme || puzzle.id);
           setActivePuzzle(puzzle);
           setShowPuzzlePicker(false);
         }}
@@ -556,6 +585,7 @@ export default function App() {
     return (
       <LessonPicker
         onSelect={(lesson) => {
+          beginLocalSession("tutorial", lesson.title);
           setTutorialLesson(lesson);
           setShowLessonPicker(false);
         }}

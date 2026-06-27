@@ -19,6 +19,7 @@ import {
 } from "./roomUtils.js";
 import { registerAdminRoutes } from "./admin.js";
 import { logPlayerSession, clientIpFromSocket } from "./supabase.js";
+import { registerSessionLogRoute } from "./sessionLogRoute.js";
 
 const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
@@ -35,12 +36,14 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "1kb" }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", rooms: rooms.size });
 });
 
 registerAdminRoutes(app);
+registerSessionLogRoute(app);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");

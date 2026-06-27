@@ -71,3 +71,15 @@ export function clientIpFromSocket(socket) {
   }
   return addr || null;
 }
+
+export function clientIpFromRequest(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.length > 0) {
+    return forwarded.split(",")[0].trim();
+  }
+  const addr = req.socket?.remoteAddress;
+  if (typeof addr === "string" && addr.startsWith("::ffff:")) {
+    return addr.slice(7);
+  }
+  return addr || null;
+}

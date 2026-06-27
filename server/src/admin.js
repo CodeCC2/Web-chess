@@ -191,7 +191,7 @@ function logsPage(rows, flash = "") {
     <div class="card" style="overflow-x:auto">
       <table>
         <thead>
-          <tr><th>#</th><th>เวลา</th><th>ชื่อ</th><th>ห้อง</th><th>สี</th><th>เหตุการณ์</th><th>IP</th><th></th></tr>
+          <tr><th>#</th><th>เวลา</th><th>ชื่อ</th><th>โหมด/ห้อง</th><th>รายละเอียด</th><th>เหตุการณ์</th><th>IP</th><th></th></tr>
         </thead>
         <tbody>${tableRows || '<tr><td colspan="8">ยังไม่มี log</td></tr>'}</tbody>
       </table>
