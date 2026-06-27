@@ -16,5 +16,6 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 
--- Storage: create bucket "avatars" in Dashboard → Storage → New bucket
--- Set bucket to Public (for avatar URLs) or use signed URLs later.
+-- Storage buckets (Dashboard → Storage → New bucket, Public):
+--   avatars      — รูปโปรไฟล์สมาชิก
+--   site-assets  — ไอคอนเว็บ (favicon) จากหน้าแอดมิน

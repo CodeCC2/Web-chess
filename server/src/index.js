@@ -23,6 +23,10 @@ import { registerSessionLogRoute } from "./sessionLogRoute.js";
 import { registerAuthRoutes, initAuth } from "./auth.js";
 import { parseSessionFromCookieHeader } from "./session.js";
 import { recordOnlineResult } from "./users.js";
+import {
+  initSiteAssets,
+  registerSiteAssetRoutes,
+} from "./siteAssets.js";
 
 const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
@@ -56,6 +60,8 @@ registerSessionLogRoute(app);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");
+registerSiteAssetRoutes(app, clientDist);
+
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
   app.get("*", (_req, res) => {
@@ -890,6 +896,7 @@ io.on("connection", (socket) => {
 export { rooms, buildState, createRoom, TIME_CONTROLS };
 
 await initAuth();
+await initSiteAssets();
 
 server.listen(PORT, () => {
   console.log(`Chess server listening on http://localhost:${PORT}`);

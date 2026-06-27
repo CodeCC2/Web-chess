@@ -94,6 +94,18 @@ export async function updateAvatarUrl(userId, avatarUrl) {
   return mapUser(data);
 }
 
+export async function listUsers(limit = 200) {
+  const { data, error } = await supabase
+    .from("users")
+    .select(
+      "id,username,display_name,avatar_url,role,wins,losses,draws,created_at"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
 export async function recordOnlineResult(room, status, winner) {
   if (!room?.userIds) return;
   const whiteId = room.userIds.white;

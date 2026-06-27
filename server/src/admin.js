@@ -1,7 +1,18 @@
+import multer from "multer";
 import { supabase, supabaseConfigured, formatSupabaseError } from "./supabase.js";
 import { getSessionFromRequest } from "./auth.js";
-import { findUserById } from "./users.js";
+import { findUserById, listUsers } from "./users.js";
 import { clearSessionCookie } from "./session.js";
+import { saveFaviconFromBuffer } from "./siteAssets.js";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype?.startsWith("image/")) cb(null, true);
+    else cb(new Error("invalid_file_type"));
+  },
+});
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -22,8 +33,9 @@ function layout(title, body, { loggedIn = false } = {}) {
     :root { color-scheme: dark; --bg:#0a0c10; --card:#141820; --border:#2a3140; --text:#e8eaed; --muted:#9aa3b2; --gold:#e0bc4a; --danger:#ef4444; }
     * { box-sizing: border-box; }
     body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); padding:24px; }
-    .wrap { max-width: 960px; margin: 0 auto; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
     h1 { font-size: 1.35rem; margin: 0 0 8px; }
+    h2 { font-size: 1.05rem; margin: 0 0 12px; }
     .sub { color: var(--muted); margin-bottom: 20px; font-size: 0.9rem; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
     label { display:block; margin-bottom:6px; color:var(--muted); font-size:0.85rem; }
@@ -38,12 +50,17 @@ function layout(title, body, { loggedIn = false } = {}) {
     .actions form { display:inline; margin-right:6px; }
     .toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
     .badge { font-size:0.75rem; padding:2px 8px; border-radius:999px; background:#1f2937; color:var(--muted); }
+    .badge.admin { background:#422006; color:#fcd34d; }
+    .section { margin-bottom: 28px; }
+    .favicon-form { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+    .favicon-form input[type=file] { font-size:0.85rem; color:var(--muted); }
+    .favicon-preview { width:32px; height:32px; border-radius:6px; border:1px solid var(--border); }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>${escapeHtml(title)}</h1>
-    ${loggedIn ? '<p class="sub">แอดมิน — จัดการ log ผู้เล่น (PDPA: ลบ IP ได้เมื่อไม่ต้องการเก็บ)</p>' : ""}
+    ${loggedIn ? '<p class="sub">แอดมิน — log ผู้เล่น · สมาชิก · ไอคอนเว็บ</p>' : ""}
     ${body}
     ${loggedIn ? '<p style="margin-top:24px"><a class="btn" href="/admin/logout">ออกจากระบบ</a> · <a class="btn" href="/">กลับหน้าเกม</a></p>' : ""}
   </div>
@@ -99,6 +116,12 @@ function fetchLogsSafe(limit = 200) {
   });
 }
 
+function fetchUsersSafe(limit = 200) {
+  return listUsers(limit).catch((err) => {
+    throw new Error(formatSupabaseError(err));
+  });
+}
+
 function formatTime(iso) {
   try {
     return new Date(iso).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
@@ -111,13 +134,15 @@ const FLASH_MESSAGES = {
   deleted: "ลบรายการแล้ว",
   ip_deleted: "ลบ log ของ IP นี้แล้ว",
   purged: "ลบ log เก่ากว่า 30 วันแล้ว",
+  favicon_updated: "อัปเดตไอคอนเว็บแล้ว — รีเฟรชแท็บเบราว์เซอร์ (อาจต้อง Ctrl+F5)",
+  favicon_error: "อัปโหลดไอคอนไม่สำเร็จ — ตรวจสอบว่าสร้าง bucket site-assets ใน Supabase Storage",
 };
 
-function logsPage(rows, flash = "") {
-  const tableRows = rows
+function dashboardPage({ logs, users, flash = "" }) {
+  const logRows = logs
     .map(
-      (r) => `<tr>
-        <td>${r.id}</td>
+      (r, i) => `<tr>
+        <td>${i + 1}</td>
         <td>${formatTime(r.created_at)}</td>
         <td>${escapeHtml(r.name)}</td>
         <td>${escapeHtml(r.room_id || "—")}</td>
@@ -141,22 +166,64 @@ function logsPage(rows, flash = "") {
     )
     .join("");
 
+  const userRows = users
+    .map(
+      (u, i) => `<tr>
+        <td>${i + 1}</td>
+        <td>${escapeHtml(u.username)}</td>
+        <td>${escapeHtml(u.display_name)}</td>
+        <td><span class="badge${u.role === "admin" ? " admin" : ""}">${escapeHtml(u.role)}</span></td>
+        <td>${u.wins ?? 0}</td>
+        <td>${u.losses ?? 0}</td>
+        <td>${u.draws ?? 0}</td>
+        <td>${formatTime(u.created_at)}</td>
+      </tr>`
+    )
+    .join("");
+
   return layout(
-    "Log ผู้เล่น",
+    "แดชบอร์ดแอดมิน",
     `${flash ? `<p class="ok">${escapeHtml(flash)}</p>` : ""}
-    <div class="toolbar">
-      <form method="post" action="/admin/purge-old" onsubmit="return confirm('ลบ log เก่ากว่า 30 วัน?')">
-        <button type="submit" class="danger">ลบ log เก่ากว่า 30 วัน</button>
+
+    <div class="section card">
+      <h2>ไอคอนเว็บ (Favicon)</h2>
+      <p class="sub" style="margin-top:0">อัปโหลดรูปสี่เหลี่ยม — จะเปลี่ยนไอคอนแถบเบราว์เซอร์ทั้งเว็บ</p>
+      <form class="favicon-form" method="post" action="/admin/favicon" enctype="multipart/form-data">
+        <div>
+          <label for="favicon">เลือกรูป PNG/JPG</label>
+          <input id="favicon" type="file" name="favicon" accept="image/*" required />
+        </div>
+        <img class="favicon-preview" src="/favicon.png?v=${Date.now()}" alt="" width="32" height="32" />
+        <button type="submit" class="primary">อัปโหลดไอคอน</button>
       </form>
-      <a class="btn" href="/admin">รีเฟรช</a>
     </div>
-    <div class="card" style="overflow-x:auto">
+
+    <div class="section card" style="overflow-x:auto">
+      <h2>สมาชิกในระบบ (${users.length})</h2>
       <table>
         <thead>
-          <tr><th>#</th><th>เวลา</th><th>ชื่อ</th><th>โหมด/ห้อง</th><th>รายละเอียด</th><th>เหตุการณ์</th><th>IP</th><th></th></tr>
+          <tr><th>#</th><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>บทบาท</th><th>ชนะ</th><th>แพ้</th><th>เสมอ</th><th>สมัครเมื่อ</th></tr>
         </thead>
-        <tbody>${tableRows || '<tr><td colspan="8">ยังไม่มี log</td></tr>'}</tbody>
+        <tbody>${userRows || '<tr><td colspan="8">ยังไม่มีสมาชิก</td></tr>'}</tbody>
       </table>
+    </div>
+
+    <div class="section">
+      <div class="toolbar">
+        <h2 style="margin:0;flex:1">Log ผู้เล่น</h2>
+        <form method="post" action="/admin/purge-old" onsubmit="return confirm('ลบ log เก่ากว่า 30 วัน?')">
+          <button type="submit" class="danger">ลบ log เก่ากว่า 30 วัน</button>
+        </form>
+        <a class="btn" href="/admin">รีเฟรช</a>
+      </div>
+      <div class="card" style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>#</th><th>เวลา</th><th>ชื่อ</th><th>โหมด/ห้อง</th><th>รายละเอียด</th><th>เหตุการณ์</th><th>IP</th><th></th></tr>
+          </thead>
+          <tbody>${logRows || '<tr><td colspan="8">ยังไม่มี log</td></tr>'}</tbody>
+        </table>
+      </div>
     </div>`,
     { loggedIn: true }
   );
@@ -190,11 +257,32 @@ export function registerAdminRoutes(app) {
       return;
     }
     try {
-      const rows = await fetchLogsSafe();
+      const [logs, users] = await Promise.all([
+        fetchLogsSafe(),
+        fetchUsersSafe(),
+      ]);
       const flash = FLASH_MESSAGES[req.query.flash] || "";
-      res.send(logsPage(rows, flash));
+      res.send(dashboardPage({ logs, users, flash }));
     } catch (err) {
       res.status(500).send(layout("ข้อผิดพลาด", `<div class="card err">${escapeHtml(err.message)}</div>`, { loggedIn: true }));
+    }
+  });
+
+  app.post("/admin/favicon", upload.single("favicon"), async (req, res) => {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    if (!req.file) {
+      res.redirect(302, "/admin?flash=favicon_error");
+      return;
+    }
+    try {
+      await saveFaviconFromBuffer(req.file.buffer);
+      res.redirect(302, "/admin?flash=favicon_updated");
+    } catch (err) {
+      console.error("favicon upload:", err);
+      res.status(500).send(
+        layout("ข้อผิดพลาด", `<div class="card err">${escapeHtml(err.message)}</div>`, { loggedIn: true })
+      );
     }
   });
 
