@@ -1011,6 +1011,52 @@ input:focus {
   }
 }
 
+/* iPad / tablet portrait — board full width on top, panel below */
+@media (min-width: 721px) and (max-width: 1100px) and (orientation: portrait) {
+  .app.game {
+    max-width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .game-body {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .board-column {
+    width: 100%;
+    align-items: center;
+  }
+
+  .board-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 720px;
+    flex: none;
+  }
+
+  .chess-clocks {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .game-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .game-header-right {
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 380px) {
   .mode-grid {
     grid-template-columns: 1fr;

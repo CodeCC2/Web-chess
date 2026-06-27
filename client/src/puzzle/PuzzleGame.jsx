@@ -9,7 +9,7 @@ import {
   classifyMoveSound,
 } from "../boardFeedback.js";
 import { needsPromotion } from "../promotionUtils.js";
-import { BOARD_STYLE, boardWidth } from "../boardTheme.js";
+import { BOARD_STYLE, useBoardWidth } from "../boardTheme.js";
 import SettingsButton from "../components/SettingsButton.jsx";
 import { useSettings } from "../SettingsContext.jsx";
 import { markPuzzleComplete } from "./puzzles.js";
@@ -30,6 +30,7 @@ const WRONG_STYLE = {
 
 export default function PuzzleGame({ puzzle, onExit, onNext }) {
   const { squareStyles } = useSettings();
+  const boardSize = useBoardWidth();
   const gameRef = useRef(new Chess(puzzle.fen));
   const playerColor = useRef(
     puzzle.fen.includes(" w ") ? "w" : "b"
@@ -327,7 +328,7 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
             }
             customSquareStyles={customSquareStyles}
             customArrows={hintArrows}
-            boardWidth={boardWidth()}
+            boardWidth={boardSize}
             customBoardStyle={BOARD_STYLE}
             {...squareStyles}
             animationDuration={300}

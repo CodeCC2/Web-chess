@@ -3,6 +3,7 @@ import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 import { markLessonComplete } from "./lessons.js";
 import { buildMoveHighlights } from "../boardUtils.js";
+import { useBoardWidth } from "../boardTheme.js";
 
 const HINT_FROM_STYLE = {
   background: "rgba(250, 204, 21, 0.45)",
@@ -19,6 +20,7 @@ const WRONG_STYLE = {
 };
 
 export default function TutorialGame({ lesson, onExit, onNextLesson }) {
+  const boardSize = useBoardWidth();
   const gameRef = useRef(new Chess());
   const [stepIndex, setStepIndex] = useState(0);
   const [fen, setFen] = useState("");
@@ -259,7 +261,7 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
             arePiecesDraggable={!completed && !waitingOpponent}
             customSquareStyles={customSquareStyles}
             customArrows={hintArrows}
-            boardWidth={Math.min(480, window.innerWidth - 32)}
+            boardWidth={boardSize}
             customBoardStyle={{
               borderRadius: "8px",
               boxShadow: successFlash

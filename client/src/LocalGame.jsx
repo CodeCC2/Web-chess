@@ -16,12 +16,7 @@ import ThinkingDots from "./components/ThinkingDots.jsx";
 import SettingsButton from "./components/SettingsButton.jsx";
 import { useSettings } from "./SettingsContext.jsx";
 import { copyPgn, downloadPgn } from "./pgnUtils.js";
-import {
-  BOARD_STYLE,
-  boardWidth,
-  gameOverVariantFromInfo,
-  gameOverTitle,
-} from "./boardTheme.js";
+import { BOARD_STYLE, useBoardWidth, gameOverVariantFromInfo, gameOverTitle } from "./boardTheme.js";
 
 const DIFFICULTY_LABEL = DIFFICULTY_LABELS;
 
@@ -52,6 +47,7 @@ function computeStatus(game) {
 
 export default function LocalGame({ difficulty, playerColor, onExit }) {
   const { squareStyles } = useSettings();
+  const boardSize = useBoardWidth();
   const gameRef = useRef(new Chess());
   const redoStackRef = useRef([]);
   const [redoCount, setRedoCount] = useState(0);
@@ -281,7 +277,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
               boardOrientation={playerColor === "black" ? "black" : "white"}
               arePiecesDraggable={isPlayerTurn && !thinking && !pendingPromotion}
               customSquareStyles={boardSquareStyles}
-              boardWidth={boardWidth()}
+              boardWidth={boardSize}
               customBoardStyle={BOARD_STYLE}
               {...squareStyles}
             />

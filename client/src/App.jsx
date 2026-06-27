@@ -31,7 +31,7 @@ import PlayerStatusCard from "./components/PlayerStatusCard.jsx";
 import SettingsButton from "./components/SettingsButton.jsx";
 import { useSettings } from "./SettingsContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
-import { BOARD_STYLE, boardWidth } from "./boardTheme.js";
+import { BOARD_STYLE, useBoardWidth } from "./boardTheme.js";
 
 const FINISHED_STATUSES = new Set([
   "checkmate",
@@ -102,6 +102,7 @@ function gameOverVariant(status, winner, color) {
 export default function App() {
   const { squareStyles } = useSettings();
   const { user, refreshUser } = useAuth();
+  const boardSize = useBoardWidth();
   const [name, setName] = useState("");
   const [roomInput, setRoomInput] = useState("");
   const [roomId, setRoomId] = useState(null);
@@ -822,7 +823,7 @@ export default function App() {
                 !pendingPromotion
               }
               customSquareStyles={boardSquareStyles}
-              boardWidth={boardWidth()}
+              boardWidth={boardSize}
               customBoardStyle={BOARD_STYLE}
               {...squareStyles}
               animationDuration={300}
