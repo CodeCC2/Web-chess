@@ -1,41 +1,7 @@
-import { createHmac } from "node:crypto";
 import { supabase, supabaseConfigured, formatSupabaseError } from "./supabase.js";
-
-const COOKIE_NAME = "chess_admin";
-const SESSION_VERSION = "admin-v1";
-
-let sessionToken = null;
-
-function initSessionToken() {
-  const secret = process.env.ADMIN_SESSION_SECRET;
-  const password = process.env.ADMIN_PASSWORD;
-  if (!secret || !password) {
-    console.warn(
-      "Admin panel disabled — set ADMIN_PASSWORD and ADMIN_SESSION_SECRET"
-    );
-    return;
-  }
-  sessionToken = createHmac("sha256", secret)
-    .update(SESSION_VERSION)
-    .digest("hex");
-}
-
-function parseCookies(header) {
-  const out = {};
-  if (!header) return out;
-  for (const part of header.split(";")) {
-    const [rawKey, ...rest] = part.trim().split("=");
-    if (!rawKey) continue;
-    out[rawKey] = decodeURIComponent(rest.join("="));
-  }
-  return out;
-}
-
-function isAdmin(req) {
-  return Boolean(
-    sessionToken && parseCookies(req.headers.cookie)[COOKIE_NAME] === sessionToken
-  );
-}
+import { getSessionFromRequest } from "./auth.js";
+import { findUserById } from "./users.js";
+import { clearSessionCookie } from "./session.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -61,7 +27,6 @@ function layout(title, body, { loggedIn = false } = {}) {
     .sub { color: var(--muted); margin-bottom: 20px; font-size: 0.9rem; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
     label { display:block; margin-bottom:6px; color:var(--muted); font-size:0.85rem; }
-    input[type=password], input[type=text] { width:100%; max-width:320px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:#0f1319; color:var(--text); }
     button, .btn { display:inline-block; padding:8px 14px; border-radius:8px; border:1px solid var(--border); background:#1a2030; color:var(--text); cursor:pointer; text-decoration:none; font-size:0.9rem; }
     button.primary, .btn.primary { background: linear-gradient(135deg,#c9a227,#e0bc4a); color:#0a0c10; border-color:#c9a227; font-weight:600; }
     button.danger { border-color:#7f1d1d; color:#fecaca; background:#450a0a; }
@@ -80,32 +45,29 @@ function layout(title, body, { loggedIn = false } = {}) {
     <h1>${escapeHtml(title)}</h1>
     ${loggedIn ? '<p class="sub">แอดมิน — จัดการ log ผู้เล่น (PDPA: ลบ IP ได้เมื่อไม่ต้องการเก็บ)</p>' : ""}
     ${body}
-    ${loggedIn ? '<p style="margin-top:24px"><a class="btn" href="/admin/logout">ออกจากระบบ</a></p>' : ""}
+    ${loggedIn ? '<p style="margin-top:24px"><a class="btn" href="/admin/logout">ออกจากระบบ</a> · <a class="btn" href="/">กลับหน้าเกม</a></p>' : ""}
   </div>
 </body>
 </html>`;
 }
 
-function loginPage(error = "") {
+function loginHintPage() {
   return layout(
     "เข้าสู่ระบบแอดมิน",
     `<div class="card">
-      <form method="post" action="/admin/login">
-        <label for="password">รหัสผ่านแอดมิน</label>
-        <input id="password" name="password" type="password" required autocomplete="current-password" />
-        <p style="margin-top:14px"><button class="primary" type="submit">เข้าสู่ระบบ</button></p>
-        ${error ? `<p class="err">${escapeHtml(error)}</p>` : ""}
-      </form>
+      <p>ล็อกอินที่หน้าเกมด้วยบัญชี <strong>admin</strong> ก่อน แล้วกลับมาที่หน้านี้</p>
+      <p class="sub">กดปุ่ม Login มุมขวาบน → เข้าสู่ระบบ → ชื่อผู้ใช้ <code>admin</code></p>
+      <p><a class="btn primary" href="/">ไปหน้าเกม</a></p>
     </div>`
   );
 }
 
-function configWarningPage() {
+function forbiddenPage() {
   return layout(
-    "แอดมิน",
-    `<div class="card">
-      <p>ยังไม่ได้ตั้งค่าแอดมินบนเซิร์ฟเวอร์</p>
-      <p class="sub">ใส่ <code>ADMIN_PASSWORD</code> และ <code>ADMIN_SESSION_SECRET</code> ใน Render Environment แล้ว deploy ใหม่</p>
+    "ไม่มีสิทธิ์",
+    `<div class="card err">
+      <p>บัญชีนี้ไม่ใช่แอดมิน</p>
+      <p><a class="btn" href="/">กลับหน้าเกม</a></p>
     </div>`
   );
 }
@@ -115,7 +77,7 @@ function supabaseWarningPage() {
     "แอดมิน",
     `<div class="card">
       <p>ยังไม่ได้เชื่อม Supabase</p>
-      <p class="sub">ใส่ <code>SUPABASE_URL</code> และ <code>SUPABASE_SERVICE_ROLE_KEY</code> ใน Render แล้วรัน SQL จาก <code>scripts/supabase-schema.sql</code></p>
+      <p class="sub">ใส่ <code>SUPABASE_URL</code> และ <code>SUPABASE_SERVICE_ROLE_KEY</code> ใน Render</p>
     </div>`,
     { loggedIn: true }
   );
@@ -200,18 +162,29 @@ function logsPage(rows, flash = "") {
   );
 }
 
-export function registerAdminRoutes(app) {
-  initSessionToken();
+async function requireAdmin(req, res) {
+  const session = getSessionFromRequest(req);
+  if (!session) {
+    res.status(401).send(loginHintPage());
+    return null;
+  }
+  try {
+    const row = await findUserById(session.userId);
+    if (!row || row.role !== "admin") {
+      res.status(403).send(forbiddenPage());
+      return null;
+    }
+    return row;
+  } catch (err) {
+    res.status(500).send(layout("ข้อผิดพลาด", `<div class="card err">${escapeHtml(err.message)}</div>`));
+    return null;
+  }
+}
 
+export function registerAdminRoutes(app) {
   app.get("/admin", async (req, res) => {
-    if (!sessionToken) {
-      res.status(503).send(configWarningPage());
-      return;
-    }
-    if (!isAdmin(req)) {
-      res.send(loginPage());
-      return;
-    }
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
     if (!supabaseConfigured) {
       res.status(503).send(supabaseWarningPage());
       return;
@@ -225,50 +198,14 @@ export function registerAdminRoutes(app) {
     }
   });
 
-  app.post("/admin/login", (req, res) => {
-    const wantsJson = req.headers.accept?.includes("application/json");
-    if (!sessionToken) {
-      if (wantsJson) {
-        res.status(503).json({ ok: false, error: "admin_not_configured" });
-        return;
-      }
-      res.status(503).send(configWarningPage());
-      return;
-    }
-    const password = req.body?.password || "";
-    if (password !== process.env.ADMIN_PASSWORD) {
-      if (wantsJson) {
-        res.status(401).json({ ok: false, error: "invalid_password" });
-        return;
-      }
-      res.status(401).send(loginPage("รหัสผ่านไม่ถูกต้อง"));
-      return;
-    }
-    const secure =
-      process.env.NODE_ENV === "production" ? "; Secure" : "";
-    res.setHeader(
-      "Set-Cookie",
-      `${COOKIE_NAME}=${sessionToken}; Path=/admin; HttpOnly; SameSite=Lax; Max-Age=86400${secure}`
-    );
-    if (wantsJson) {
-      res.json({ ok: true });
-      return;
-    }
-    res.redirect(302, "/admin");
-  });
-
   app.get("/admin/logout", (req, res) => {
-    const secure =
-      process.env.NODE_ENV === "production" ? "; Secure" : "";
-    res.setHeader(
-      "Set-Cookie",
-      `${COOKIE_NAME}=; Path=/admin; HttpOnly; SameSite=Lax; Max-Age=0${secure}`
-    );
-    res.redirect(302, "/admin");
+    clearSessionCookie(res);
+    res.redirect("/");
   });
 
   app.post("/admin/delete/:id", async (req, res) => {
-    if (!isAdmin(req) || !supabase) {
+    const admin = await requireAdmin(req, res);
+    if (!admin || !supabase) {
       res.redirect(302, "/admin");
       return;
     }
@@ -280,7 +217,8 @@ export function registerAdminRoutes(app) {
   });
 
   app.post("/admin/delete-ip", async (req, res) => {
-    if (!isAdmin(req) || !supabase) {
+    const admin = await requireAdmin(req, res);
+    if (!admin || !supabase) {
       res.redirect(302, "/admin");
       return;
     }
@@ -292,7 +230,8 @@ export function registerAdminRoutes(app) {
   });
 
   app.post("/admin/purge-old", async (req, res) => {
-    if (!isAdmin(req) || !supabase) {
+    const admin = await requireAdmin(req, res);
+    if (!admin || !supabase) {
       res.redirect(302, "/admin");
       return;
     }

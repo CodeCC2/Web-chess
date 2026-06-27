@@ -30,6 +30,7 @@ import GameOverOverlay from "./components/GameOverOverlay.jsx";
 import PlayerStatusCard from "./components/PlayerStatusCard.jsx";
 import SettingsButton from "./components/SettingsButton.jsx";
 import { useSettings } from "./SettingsContext.jsx";
+import { useAuth } from "./AuthContext.jsx";
 import { BOARD_STYLE, boardWidth } from "./boardTheme.js";
 
 const FINISHED_STATUSES = new Set([
@@ -100,6 +101,7 @@ function gameOverVariant(status, winner, color) {
 
 export default function App() {
   const { squareStyles } = useSettings();
+  const { user, refreshUser } = useAuth();
   const [name, setName] = useState("");
   const [roomInput, setRoomInput] = useState("");
   const [roomId, setRoomId] = useState(null);
@@ -160,6 +162,10 @@ export default function App() {
     const fromUrl = params.get("room")?.trim().toUpperCase();
     if (fromUrl) setRoomInput(fromUrl);
   }, []);
+
+  useEffect(() => {
+    if (user?.displayName) setName(user.displayName);
+  }, [user?.displayName]);
 
   const startBotGame = useCallback(() => {
     const playerColor =
@@ -309,14 +315,14 @@ export default function App() {
         "joinGame",
         {
           roomId: id,
-          name: name.trim() || "ไม่ระบุชื่อ",
+          name: (user?.displayName || name).trim() || "ไม่ระบุชื่อ",
           timeControl,
           reconnectToken,
         },
         (res) => applyJoinResult(id, res)
       );
     },
-    [name, roomInput, timeControl, applyJoinResult]
+    [name, roomInput, timeControl, applyJoinResult, user?.displayName]
   );
 
   useEffect(() => {
@@ -390,6 +396,7 @@ export default function App() {
     }
     function onGameOver({ status, winner }) {
       setState((prev) => (prev ? { ...prev, status, winner } : prev));
+      void refreshUser();
     }
     function onRematchStarted() {
       setNotice("เริ่มเกมใหม่!");
@@ -444,7 +451,7 @@ export default function App() {
       socket.off("clockUpdate", onClockUpdate);
       socket.off("chatMessage", onChatMessage);
     };
-  }, [resetBoardUi]);
+  }, [resetBoardUi, refreshUser]);
 
   const handleTutorialNext = useCallback(() => {
     if (!tutorialLesson) return;

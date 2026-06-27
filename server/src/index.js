@@ -20,6 +20,9 @@ import {
 import { registerAdminRoutes } from "./admin.js";
 import { logPlayerSession, clientIpFromSocket } from "./supabase.js";
 import { registerSessionLogRoute } from "./sessionLogRoute.js";
+import { registerAuthRoutes, initAuth } from "./auth.js";
+import { parseSessionFromCookieHeader } from "./session.js";
+import { recordOnlineResult } from "./users.js";
 
 const PORT = process.env.PORT || 3001;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
@@ -34,7 +37,12 @@ function sanitizeChatText(text) {
 
 const app = express();
 app.set("trust proxy", 1);
-app.use(cors({ origin: CLIENT_ORIGIN }));
+app.use(
+  cors({
+    origin: CLIENT_ORIGIN === "*" ? true : CLIENT_ORIGIN,
+    credentials: true,
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: "1kb" }));
 
@@ -42,6 +50,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", rooms: rooms.size });
 });
 
+registerAuthRoutes(app);
 registerAdminRoutes(app);
 registerSessionLogRoute(app);
 
@@ -57,7 +66,21 @@ if (fs.existsSync(clientDist)) {
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: CLIENT_ORIGIN, methods: ["GET", "POST"] },
+  cors: {
+    origin: CLIENT_ORIGIN === "*" ? true : CLIENT_ORIGIN,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+io.use((socket, next) => {
+  const session = parseSessionFromCookieHeader(socket.handshake.headers.cookie);
+  if (session) {
+    socket.data.userId = session.userId;
+    socket.data.username = session.username;
+    socket.data.userRole = session.role;
+  }
+  next();
 });
 
 /** @type {Map<string, object>} */
@@ -84,6 +107,8 @@ function createRoom(timeControlKey = "none") {
     takebackOffer: null,
     rematchOffer: null,
     lastMove: null,
+    userIds: { white: null, black: null },
+    statsRecorded: false,
   };
   return room;
 }
@@ -167,11 +192,16 @@ function broadcastState(roomId) {
 }
 
 function setGameOver(room, status, winner) {
+  if (room.gameOver) return;
   room.gameOver = { status, winner };
   room.clockRunning = false;
   room.lastTickAt = null;
   room.drawOffer = null;
   room.takebackOffer = null;
+  if (!room.statsRecorded) {
+    room.statsRecorded = true;
+    void recordOnlineResult(room, status, winner);
+  }
 }
 
 function syncLastMoveFromHistory(room) {
@@ -199,6 +229,7 @@ function resetGameRoom(room) {
   room.takebackOffer = null;
   room.rematchOffer = null;
   room.lastMove = null;
+  room.statsRecorded = false;
   resetClocks(room);
 }
 
@@ -207,6 +238,7 @@ function clearSeat(room, color) {
   room.players[color] = null;
   room.names[color] = null;
   room.playerTokens[color] = null;
+  if (room.userIds) room.userIds[color] = null;
 }
 
 function declareOpponentWin(room, roomId, leavingColor) {
@@ -257,6 +289,7 @@ function removePlayerFromRoom(socket, { awardWin = true } = {}) {
   room.players[color] = null;
   room.names[color] = null;
   room.playerTokens[color] = null;
+  if (room.userIds) room.userIds[color] = null;
 
   if (awardWin) {
     declareOpponentWin(room, roomId, color);
@@ -347,6 +380,7 @@ io.on("connection", (socket) => {
         room.players[reclaimColor] = socket.id;
         color = reclaimColor;
         if (name?.trim()) room.names[reclaimColor] = name.trim();
+        if (socket.data.userId) room.userIds[reclaimColor] = socket.data.userId;
       } else if (!color) {
         if (!seatOccupied(room, "white")) {
           room.players.white = socket.id;
@@ -360,9 +394,17 @@ io.on("connection", (socket) => {
       }
 
       if (color) {
-        room.names[color] = name?.trim() || `ผู้เล่น${color === "white" ? "ขาว" : "ดำ"}`;
+        const display =
+          socket.data.displayName ||
+          name?.trim() ||
+          `ผู้เล่น${color === "white" ? "ขาว" : "ดำ"}`;
+        room.names[color] = display;
+        if (socket.data.userId) {
+          room.userIds[color] = socket.data.userId;
+        }
       }
-      socket.data.displayName = name?.trim() || "ไม่ระบุชื่อ";
+      socket.data.displayName =
+        name?.trim() || socket.data.displayName || "ไม่ระบุชื่อ";
 
       socket.data.roomId = roomId;
       socket.join(roomId);
@@ -466,6 +508,19 @@ io.on("connection", (socket) => {
     room.drawOffer = null;
     room.takebackOffer = null;
     applyIncrement(room, color);
+
+    const derived = deriveChessStatus(room.chess);
+    if (
+      derived.status !== "playing" &&
+      derived.status !== "check" &&
+      !isGameFinished(room)
+    ) {
+      setGameOver(room, derived.status, derived.winner);
+      io.to(roomId).emit("gameOver", {
+        status: derived.status,
+        winner: derived.winner,
+      });
+    }
 
     ack?.({ ok: true });
     broadcastState(roomId);
@@ -833,6 +888,8 @@ io.on("connection", (socket) => {
 });
 
 export { rooms, buildState, createRoom, TIME_CONTROLS };
+
+await initAuth();
 
 server.listen(PORT, () => {
   console.log(`Chess server listening on http://localhost:${PORT}`);
