@@ -13,10 +13,11 @@ import {
 import AppBrand from "./components/AppBrand.jsx";
 import GameOverOverlay from "./components/GameOverOverlay.jsx";
 import ThinkingDots from "./components/ThinkingDots.jsx";
+import SettingsButton from "./components/SettingsButton.jsx";
+import { useSettings } from "./SettingsContext.jsx";
 import { copyPgn, downloadPgn } from "./pgnUtils.js";
 import {
   BOARD_STYLE,
-  SQUARES,
   boardWidth,
   gameOverVariantFromInfo,
   gameOverTitle,
@@ -50,6 +51,7 @@ function computeStatus(game) {
 }
 
 export default function LocalGame({ difficulty, playerColor, onExit }) {
+  const { squareStyles } = useSettings();
   const gameRef = useRef(new Chess());
   const redoStackRef = useRef([]);
   const [redoCount, setRedoCount] = useState(0);
@@ -262,6 +264,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
           <button type="button" className="home-btn" onClick={onExit}>
             หน้าแรก
           </button>
+          <SettingsButton className="settings-fab header-settings" />
         </div>
       </header>
 
@@ -280,7 +283,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
               customSquareStyles={boardSquareStyles}
               boardWidth={boardWidth()}
               customBoardStyle={BOARD_STYLE}
-              {...SQUARES}
+              {...squareStyles}
             />
             {pendingPromotion && (
               <PromotionPicker

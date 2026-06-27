@@ -27,7 +27,9 @@ import { copyPgn, downloadPgn } from "./pgnUtils.js";
 import AppBrand from "./components/AppBrand.jsx";
 import GameOverOverlay from "./components/GameOverOverlay.jsx";
 import PlayerStatusCard from "./components/PlayerStatusCard.jsx";
-import { BOARD_STYLE, SQUARES, boardWidth } from "./boardTheme.js";
+import SettingsButton from "./components/SettingsButton.jsx";
+import { useSettings } from "./SettingsContext.jsx";
+import { BOARD_STYLE, boardWidth } from "./boardTheme.js";
 
 const FINISHED_STATUSES = new Set([
   "checkmate",
@@ -64,7 +66,7 @@ const LOBBY_MODES = [
     id: "puzzle",
     icon: "🧩",
     title: "Puzzle",
-    desc: "ฝึกแท็กติก 50 ข้อ",
+    desc: "ฝึกแท็กติกหลายธีม",
   },
 ];
 
@@ -96,6 +98,7 @@ function gameOverVariant(status, winner, color) {
 }
 
 export default function App() {
+  const { squareStyles } = useSettings();
   const [name, setName] = useState("");
   const [roomInput, setRoomInput] = useState("");
   const [roomId, setRoomId] = useState(null);
@@ -481,6 +484,19 @@ export default function App() {
   const incomingDrawOffer =
     state?.drawOffer && state.drawOffer !== color ? state.drawOffer : null;
 
+  const incomingTakebackOffer =
+    state?.takebackOffer && state.takebackOffer !== color
+      ? state.takebackOffer
+      : null;
+
+  const incomingRematchOffer =
+    state?.rematchOffer && state.rematchOffer !== color
+      ? state.rematchOffer
+      : null;
+
+  const pendingRematchOffer =
+    state?.rematchOffer && state.rematchOffer === color;
+
   const handleCopyInvite = useCallback(async () => {
     if (!inviteUrl) return;
     try {
@@ -563,6 +579,7 @@ export default function App() {
       <div className="app lobby">
         <div className="lobby-hero">
           <AppBrand subtitle="เล่นกับเพื่อน คอมพิวเตอร์ Puzzle และบทเรียน" />
+          <SettingsButton className="settings-fab lobby-settings" />
         </div>
 
         <div className="mode-grid">
@@ -740,6 +757,7 @@ export default function App() {
           <button type="button" className="home-btn" onClick={goHome}>
             หน้าแรก
           </button>
+          <SettingsButton className="settings-fab header-settings" />
         </div>
       </header>
 
@@ -769,7 +787,7 @@ export default function App() {
               customSquareStyles={boardSquareStyles}
               boardWidth={boardWidth()}
               customBoardStyle={BOARD_STYLE}
-              {...SQUARES}
+              {...squareStyles}
               animationDuration={300}
             />
             {pendingPromotion && color !== "spectator" && (
@@ -790,18 +808,50 @@ export default function App() {
                 }
               >
                 {color !== "spectator" && (
-                  <button
-                    className="primary"
-                    type="button"
-                    onClick={() =>
-                      socket.emit("rematch", {}, (res) => {
-                        if (!res?.ok)
-                          setNotice(res?.error || "เริ่มใหม่ไม่สำเร็จ");
-                      })
-                    }
-                  >
-                    เล่นอีกครั้ง
-                  </button>
+                  <>
+                    {incomingRematchOffer ? (
+                      <>
+                        <button
+                          className="primary"
+                          type="button"
+                          onClick={() =>
+                            socket.emit("acceptRematch", {}, (res) => {
+                              if (!res?.ok)
+                                setNotice(res?.error || "เริ่มใหม่ไม่สำเร็จ");
+                            })
+                          }
+                        >
+                          ยอมเล่นอีกครั้ง
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            socket.emit("declineRematch", {}, (res) => {
+                              if (!res?.ok)
+                                setNotice(res?.error || "ปฏิเสธไม่สำเร็จ");
+                            })
+                          }
+                        >
+                          ปฏิเสธ
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className="primary"
+                        type="button"
+                        onClick={() =>
+                          socket.emit("offerRematch", {}, (res) => {
+                            if (!res?.ok)
+                              setNotice(res?.error || "เริ่มใหม่ไม่สำเร็จ");
+                            else
+                              setNotice("เสนอเล่นอีกครั้งแล้ว — รอคู่ต่อสู้ตอบ");
+                          })
+                        }
+                      >
+                        {pendingRematchOffer ? "รอคู่ต่อสู้ตอบรับ..." : "เล่นอีกครั้ง"}
+                      </button>
+                    )}
+                  </>
                 )}
                 {state?.pgn && (
                   <>
@@ -862,6 +912,16 @@ export default function App() {
                 คู่ต่อสู้เสนอเสมอ — ยอมรับหรือไม่?
               </p>
             )}
+            {incomingTakebackOffer && color !== "spectator" && !gameOver && (
+              <p className="draw-offer-notice">
+                คู่ต่อสู้ขอถอยตา — ยอมรับหรือไม่?
+              </p>
+            )}
+            {incomingRematchOffer && color !== "spectator" && gameOver && (
+              <p className="draw-offer-notice">
+                คู่ต่อสู้ขอเล่นอีกครั้ง — ยอมรับหรือไม่?
+              </p>
+            )}
           </div>
 
           <div className="panel-section actions">
@@ -894,20 +954,91 @@ export default function App() {
                       ปฏิเสธเสมอ
                     </button>
                   </>
+                ) : incomingTakebackOffer ? (
+                  <>
+                    <button
+                      className="primary"
+                      type="button"
+                      onClick={() =>
+                        socket.emit("acceptTakeback", {}, (res) => {
+                          if (!res?.ok)
+                            setNotice(res?.error || "ถอยตาไม่สำเร็จ");
+                        })
+                      }
+                    >
+                      ยอมถอยตา
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        socket.emit("declineTakeback", {}, (res) => {
+                          if (!res?.ok)
+                            setNotice(res?.error || "ปฏิเสธไม่สำเร็จ");
+                        })
+                      }
+                    >
+                      ปฏิเสธถอยตา
+                    </button>
+                  </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      socket.emit("offerDraw", {}, (res) => {
-                        if (!res?.ok)
-                          setNotice(res?.error || "เสนอเสมอไม่สำเร็จ");
-                        else setNotice("เสนอเสมอแล้ว — รอคู่ต่อสู้ตอบ");
-                      })
-                    }
-                  >
-                    เสนอเสมอ
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        socket.emit("offerDraw", {}, (res) => {
+                          if (!res?.ok)
+                            setNotice(res?.error || "เสนอเสมอไม่สำเร็จ");
+                          else setNotice("เสนอเสมอแล้ว — รอคู่ต่อสู้ตอบ");
+                        })
+                      }
+                    >
+                      เสนอเสมอ
+                    </button>
+                    {(state?.history?.length ?? 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          socket.emit("requestTakeback", {}, (res) => {
+                            if (!res?.ok)
+                              setNotice(res?.error || "ขอถอยตาไม่สำเร็จ");
+                            else setNotice("ขอถอยตาแล้ว — รอคู่ต่อสู้ตอบ");
+                          })
+                        }
+                      >
+                        ขอถอยตา
+                      </button>
+                    )}
+                  </>
                 )}
+              </div>
+            )}
+
+            {color !== "spectator" && gameOver && incomingRematchOffer && (
+              <div className="action-group">
+                <span className="action-group-label">เล่นอีกครั้ง</span>
+                <button
+                  className="primary"
+                  type="button"
+                  onClick={() =>
+                    socket.emit("acceptRematch", {}, (res) => {
+                      if (!res?.ok)
+                        setNotice(res?.error || "เริ่มใหม่ไม่สำเร็จ");
+                    })
+                  }
+                >
+                  ยอมเล่นอีกครั้ง
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    socket.emit("declineRematch", {}, (res) => {
+                      if (!res?.ok)
+                        setNotice(res?.error || "ปฏิเสธไม่สำเร็จ");
+                    })
+                  }
+                >
+                  ปฏิเสธ
+                </button>
               </div>
             )}
 

@@ -1,3 +1,5 @@
+import { isSoundEnabled } from "./settings.js";
+
 export const LAST_MOVE_FROM_STYLE = {
   background: "rgba(250, 204, 21, 0.42)",
   borderRadius: "4px",
@@ -28,6 +30,7 @@ function getAudio() {
 
 /** @param {'move'|'capture'|'check'} kind */
 export function playMoveSound(kind = "move") {
+  if (!isSoundEnabled()) return;
   try {
     const ctx = getAudio();
     if (ctx.state === "suspended") ctx.resume();
