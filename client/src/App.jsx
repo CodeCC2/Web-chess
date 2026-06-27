@@ -470,7 +470,7 @@ export default function App() {
 
   const pickRandomPuzzle = useCallback(() => {
     const puzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
-    beginLocalSession("puzzle", puzzle.theme || puzzle.id);
+    beginLocalSession("puzzle", puzzle.themeLabel || puzzle.theme || puzzle.id);
     setActivePuzzle(puzzle);
     setShowPuzzlePicker(false);
   }, [beginLocalSession]);
