@@ -18,8 +18,8 @@ import {
   verifyUserPassword,
   ensureAdminUser,
   updateLastLocation,
-  parseCoords,
 } from "./users.js";
+import { resolveCoords } from "./ipGeo.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -105,12 +105,17 @@ export function registerAuthRoutes(app) {
         });
         return;
       }
-      const coords = parseCoords(req.body?.lat, req.body?.lng);
+      const ip = clientIpFromRequest(req);
+      const coords = await resolveCoords({
+        ip,
+        lat: req.body?.lat,
+        lng: req.body?.lng,
+      });
       const user = await createUser({
         username,
         password,
         displayName: displayName.slice(0, 30) || username,
-        registrationIp: clientIpFromRequest(req),
+        registrationIp: ip,
         registrationLat: coords?.lat ?? null,
         registrationLng: coords?.lng ?? null,
       });

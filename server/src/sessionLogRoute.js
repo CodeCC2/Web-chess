@@ -16,7 +16,7 @@ function allowLog(ip, mode, event) {
 }
 
 export function registerSessionLogRoute(app) {
-  app.post("/api/session-log", (req, res) => {
+  app.post("/api/session-log", async (req, res) => {
     if (!supabaseConfigured) {
       res.status(503).json({ ok: false, error: "supabase_not_configured" });
       return;
@@ -43,7 +43,11 @@ export function registerSessionLogRoute(app) {
       return;
     }
 
-    const coords = parseCoords(req.body?.lat, req.body?.lng);
+    const coords = await resolveCoords({
+      ip,
+      lat: req.body?.lat,
+      lng: req.body?.lng,
+    });
 
     void logPlayerSession({
       name,

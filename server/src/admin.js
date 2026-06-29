@@ -69,7 +69,7 @@ function layout(title, body, { loggedIn = false } = {}) {
 <body>
   <div class="wrap">
     <h1>${escapeHtml(title)}</h1>
-    ${loggedIn ? '<p class="sub">แอดมิน — log ผู้เล่น · สมาชิก · ไอคอนเว็บ</p>' : ""}
+    ${loggedIn ? '<p class="sub">แอดมิน — log ผู้เล่น · สมาชิก · ไอคอนเว็บ · พิกัดจาก GPS หรือประมาณจาก IP</p>' : ""}
     ${body}
     ${loggedIn ? '<p style="margin-top:24px"><a class="btn" href="/admin/logout">ออกจากระบบ</a> · <a class="btn" href="/">กลับหน้าเกม</a></p>' : ""}
   </div>

@@ -23,7 +23,7 @@ import { registerSessionLogRoute } from "./sessionLogRoute.js";
 import { registerAuthRoutes, initAuth } from "./auth.js";
 import { parseSessionFromCookieHeader } from "./session.js";
 import { recordOnlineResult, updateLastLocation } from "./users.js";
-import { parseCoords } from "./coords.js";
+import { resolveCoords } from "./ipGeo.js";
 import {
   initSiteAssets,
   registerSiteAssetRoutes,
@@ -260,16 +260,18 @@ function declareOpponentWin(room, roomId, leavingColor) {
   broadcastState(roomId);
 }
 
-function sessionLog(socket, event, { roomId, color, name, lat, lng } = {}) {
-  const coords = parseCoords(
-    lat ?? socket.data.lastLat,
-    lng ?? socket.data.lastLng
-  );
+async function sessionLog(socket, event, { roomId, color, name, lat, lng } = {}) {
+  const ip = socket.data.clientIp ?? clientIpFromSocket(socket);
+  const coords = await resolveCoords({
+    ip,
+    lat: lat ?? socket.data.lastLat,
+    lng: lng ?? socket.data.lastLng,
+  });
   void logPlayerSession({
     name: name || socket.data.displayName || "ไม่ระบุชื่อ",
     roomId: roomId ?? socket.data.roomId ?? null,
     color: color ?? null,
-    ip: socket.data.clientIp ?? clientIpFromSocket(socket),
+    ip,
     lat: coords?.lat ?? null,
     lng: coords?.lng ?? null,
     event,
@@ -369,7 +371,7 @@ io.on("connection", (socket) => {
 
   socket.on(
     "joinGame",
-    ({ roomId, name, timeControl, reconnectToken, lat, lng } = {}, ack) => {
+    async ({ roomId, name, timeControl, reconnectToken, lat, lng } = {}, ack) => {
       if (!roomId || typeof roomId !== "string") {
         ack?.({ ok: false, error: "รหัสห้องไม่ถูกต้อง" });
         return;
@@ -419,7 +421,11 @@ io.on("connection", (socket) => {
       socket.data.displayName =
         name?.trim() || socket.data.displayName || "ไม่ระบุชื่อ";
 
-      const coords = parseCoords(lat, lng);
+      const coords = await resolveCoords({
+        ip: socket.data.clientIp,
+        lat,
+        lng,
+      });
       if (coords) {
         socket.data.lastLat = coords.lat;
         socket.data.lastLng = coords.lng;
@@ -437,7 +443,7 @@ io.on("connection", (socket) => {
 
       broadcastState(roomId);
 
-      sessionLog(socket, "join", {
+      void sessionLog(socket, "join", {
         roomId,
         color: color || "spectator",
         name:
@@ -451,8 +457,8 @@ io.on("connection", (socket) => {
       if (socket.data.userId) {
         void updateLastLocation(socket.data.userId, {
           ip: socket.data.clientIp,
-          lat,
-          lng,
+          lat: coords?.lat,
+          lng: coords?.lng,
         });
       }
 
