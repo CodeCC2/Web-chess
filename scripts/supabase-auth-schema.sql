@@ -14,8 +14,10 @@ CREATE TABLE IF NOT EXISTS users (
   last_ip            TEXT,
   registration_lat   DOUBLE PRECISION,
   registration_lng   DOUBLE PRECISION,
+  registration_geo_source TEXT,
   last_lat           DOUBLE PRECISION,
   last_lng           DOUBLE PRECISION,
+  last_geo_source    TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

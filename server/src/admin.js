@@ -66,6 +66,8 @@ function layout(title, body, { loggedIn = false } = {}) {
     .ctx-cell { line-height:1.35; }
     .ctx-room { font-size:0.85rem; word-break:break-all; }
     .ctx-detail { display:block; font-size:0.75rem; color:var(--muted); margin-top:2px; }
+    .geo-tag { display:inline-block; font-size:0.65rem; padding:1px 5px; border-radius:4px; background:#422006; color:#fcd34d; margin-left:4px; vertical-align:middle; }
+    .geo-tag.gps { background:#14532d; color:#86efac; }
   </style>
 </head>
 <body>
@@ -114,7 +116,7 @@ function supabaseWarningPage() {
 async function fetchLogs(limit = 200) {
   const { data, error } = await supabase
     .from("player_sessions")
-    .select("id,name,room_id,color,ip,lat,lng,event,created_at")
+    .select("id,name,room_id,color,ip,lat,lng,geo_source,event,created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
@@ -148,7 +150,10 @@ async function backfillGeoFromIp() {
       if (coords) {
         patch.last_lat = coords.lat;
         patch.last_lng = coords.lng;
+        patch.last_geo_source = "ip";
       }
+    } else if (hasValidCoords(u.last_lat, u.last_lng) && !u.last_geo_source) {
+      patch.last_geo_source = "ip";
     }
     if (!hasValidCoords(u.registration_lat, u.registration_lng)) {
       const regIp = u.registration_ip || u.last_ip;
@@ -157,8 +162,14 @@ async function backfillGeoFromIp() {
         if (coords) {
           patch.registration_lat = coords.lat;
           patch.registration_lng = coords.lng;
+          patch.registration_geo_source = "ip";
         }
       }
+    } else if (
+      hasValidCoords(u.registration_lat, u.registration_lng) &&
+      !u.registration_geo_source
+    ) {
+      patch.registration_geo_source = "ip";
     }
     if (Object.keys(patch).length === 0) continue;
     const { error } = await supabase
@@ -170,23 +181,82 @@ async function backfillGeoFromIp() {
 
   const { data: logs, error: logsErr } = await supabase
     .from("player_sessions")
-    .select("id,ip,lat,lng")
+    .select("id,ip,lat,lng,geo_source")
     .order("created_at", { ascending: false })
     .limit(500);
   if (logsErr) throw new Error(logsErr.message);
 
   for (const row of logs || []) {
-    if (hasValidCoords(row.lat, row.lng) || !row.ip) continue;
-    const coords = await lookupIpGeo(row.ip);
-    if (!coords) continue;
+    const patch = {};
+    if (!hasValidCoords(row.lat, row.lng) && row.ip) {
+      const coords = await lookupIpGeo(row.ip);
+      if (coords) {
+        patch.lat = coords.lat;
+        patch.lng = coords.lng;
+        patch.geo_source = "ip";
+      }
+    } else if (hasValidCoords(row.lat, row.lng) && !row.geo_source) {
+      patch.geo_source = "ip";
+    }
+    if (Object.keys(patch).length === 0) continue;
     const { error } = await supabase
       .from("player_sessions")
-      .update({ lat: coords.lat, lng: coords.lng })
+      .update(patch)
       .eq("id", row.id);
     if (!error) logsUpdated += 1;
   }
 
   return { usersUpdated, logsUpdated };
+}
+
+async function clearIpGeoFromDb() {
+  if (!supabase) return { usersCleared: 0, logsCleared: 0 };
+
+  let usersCleared = 0;
+  let logsCleared = 0;
+
+  const { data: users } = await supabase
+    .from("users")
+    .select("id,last_geo_source,registration_geo_source")
+    .limit(500);
+
+  for (const u of users || []) {
+    const patch = {};
+    if (u.last_geo_source === "ip") {
+      patch.last_lat = null;
+      patch.last_lng = null;
+      patch.last_geo_source = null;
+    }
+    if (u.registration_geo_source === "ip") {
+      patch.registration_lat = null;
+      patch.registration_lng = null;
+      patch.registration_geo_source = null;
+    }
+    if (Object.keys(patch).length === 0) continue;
+    const { error } = await supabase
+      .from("users")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", u.id);
+    if (!error) usersCleared += 1;
+  }
+
+  const { data: logs, error: logsErr } = await supabase
+    .from("player_sessions")
+    .select("id")
+    .eq("geo_source", "ip")
+    .limit(1000);
+  if (logsErr) throw new Error(logsErr.message);
+
+  if (logs?.length) {
+    const ids = logs.map((r) => r.id);
+    const { error } = await supabase
+      .from("player_sessions")
+      .update({ lat: null, lng: null, geo_source: null })
+      .in("id", ids);
+    if (!error) logsCleared = ids.length;
+  }
+
+  return { usersCleared, logsCleared };
 }
 
 function formatTime(iso) {
@@ -206,10 +276,16 @@ function formatCoords(lat, lng) {
   return `${la.toFixed(5)}, ${ln.toFixed(5)}`;
 }
 
-function locationCell(ip, lat, lng) {
+function locationCell(ip, lat, lng, geoSource) {
   const coords = formatCoords(lat, lng);
+  const tag =
+    geoSource === "ip"
+      ? '<span class="geo-tag">≈IP</span>'
+      : geoSource === "gps"
+        ? '<span class="geo-tag gps">GPS</span>'
+        : "";
   const geoLine = coords
-    ? `<a class="loc-geo" href="https://www.google.com/maps?q=${Number(lat)},${Number(lng)}" target="_blank" rel="noopener">${escapeHtml(coords)}</a>`
+    ? `<a class="loc-geo" href="https://www.google.com/maps?q=${Number(lat)},${Number(lng)}" target="_blank" rel="noopener">${escapeHtml(coords)}</a>${tag}`
     : `<span class="loc-geo">—</span>`;
   return `<div class="loc-cell"><div class="loc-ip">${escapeHtml(ip || "—")}</div>${geoLine}</div>`;
 }
@@ -234,6 +310,7 @@ const FLASH_MESSAGES = {
   favicon_updated: "อัปเดตไอคอนเว็บแล้ว — รีเฟรชแท็บเบราว์เซอร์ (อาจต้อง Ctrl+F5)",
   favicon_error: "อัปโหลดไอคอนไม่สำเร็จ — ตรวจสอบว่าสร้าง bucket site-assets ใน Supabase Storage",
   geo_backfilled: "เติมพิกัดจาก IP แล้ว — รีเฟรชหน้านี้",
+  geo_ip_cleared: "ลบพิกัดจาก IP แล้ว (GPS ยังอยู่) — รีเฟรชหน้านี้",
 };
 
 function dashboardPage({ logs, users, flash = "" }) {
@@ -245,7 +322,7 @@ function dashboardPage({ logs, users, flash = "" }) {
         <td>${escapeHtml(r.name)}</td>
         <td>${sessionContextCell(r.room_id, r.color)}</td>
         <td><span class="badge">${escapeHtml(r.event)}</span></td>
-        <td>${locationCell(r.ip, r.lat, r.lng)}</td>
+        <td>${locationCell(r.ip, r.lat, r.lng, r.geo_source)}</td>
         <td class="actions">
           <form method="post" action="/admin/delete/${r.id}" onsubmit="return confirm('ลบรายการนี้?')">
             <button type="submit" class="danger">ลบ</button>
@@ -270,8 +347,8 @@ function dashboardPage({ logs, users, flash = "" }) {
         <td>${escapeHtml(u.username)}</td>
         <td>${escapeHtml(u.display_name)}</td>
         <td><span class="badge${u.role === "admin" ? " admin" : ""}">${escapeHtml(u.role)}</span></td>
-        <td>${locationCell(u.last_ip, u.last_lat, u.last_lng)}</td>
-        <td>${locationCell(u.registration_ip, u.registration_lat, u.registration_lng)}</td>
+        <td>${locationCell(u.last_ip, u.last_lat, u.last_lng, u.last_geo_source)}</td>
+        <td>${locationCell(u.registration_ip, u.registration_lat, u.registration_lng, u.registration_geo_source)}</td>
         <td>${statsCell(u.wins, u.losses, u.draws)}</td>
         <td>${formatTime(u.created_at)}</td>
       </tr>`
@@ -311,8 +388,11 @@ function dashboardPage({ logs, users, flash = "" }) {
         <form method="post" action="/admin/purge-old" onsubmit="return confirm('ลบ log เก่ากว่า 30 วัน?')">
           <button type="submit" class="danger">ลบ log เก่ากว่า 30 วัน</button>
         </form>
-        <form method="post" action="/admin/backfill-geo" onsubmit="return confirm('เติมพิกัดจาก IP ให้ข้อมูลที่ยังว่างหรือเป็น 0?')">
+        <form method="post" action="/admin/backfill-geo" onsubmit="return confirm('เติมพิกัดจาก IP และทำเครื่องหมายพิกัดเดิมที่ยังไม่มีแท็ก?')">
           <button type="submit" class="primary">เติมพิกัดจาก IP</button>
+        </form>
+        <form method="post" action="/admin/clear-ip-geo" onsubmit="return confirm('ลบเฉพาะพิกัดที่แท็ก ≈IP? พิกัด GPS จะไม่ถูกลบ')">
+          <button type="submit" class="danger">ลบพิกัดจาก IP</button>
         </form>
         <a class="btn" href="/admin">รีเฟรช</a>
       </div>
@@ -439,6 +519,23 @@ export function registerAdminRoutes(app) {
       res.redirect(302, "/admin?flash=geo_backfilled");
     } catch (err) {
       console.error("backfill-geo:", err);
+      res.status(500).send(
+        layout("ข้อผิดพลาด", `<div class="card err">${escapeHtml(err.message)}</div>`, { loggedIn: true })
+      );
+    }
+  });
+
+  app.post("/admin/clear-ip-geo", async (req, res) => {
+    const admin = await requireAdmin(req, res);
+    if (!admin || !supabase) {
+      res.redirect(302, "/admin");
+      return;
+    }
+    try {
+      await clearIpGeoFromDb();
+      res.redirect(302, "/admin?flash=geo_ip_cleared");
+    } catch (err) {
+      console.error("clear-ip-geo:", err);
       res.status(500).send(
         layout("ข้อผิดพลาด", `<div class="card err">${escapeHtml(err.message)}</div>`, { loggedIn: true })
       );

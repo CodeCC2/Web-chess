@@ -118,6 +118,7 @@ export function registerAuthRoutes(app) {
         registrationIp: ip,
         registrationLat: coords?.lat ?? null,
         registrationLng: coords?.lng ?? null,
+        registrationGeoSource: coords?.source ?? null,
       });
       const token = createSessionToken(user);
       setSessionCookie(res, token);

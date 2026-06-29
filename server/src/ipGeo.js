@@ -59,7 +59,9 @@ export async function lookupIpGeo(ip) {
 /** Prefer GPS from client; fall back to IP geolocation. */
 export async function resolveCoords({ ip, lat, lng } = {}) {
   const client = parseCoords(lat, lng);
-  if (client) return client;
+  if (client) return { ...client, source: "gps" };
   if (!ip) return null;
-  return lookupIpGeo(ip);
+  const ipCoords = await lookupIpGeo(ip);
+  if (!ipCoords) return null;
+  return { ...ipCoords, source: "ip" };
 }

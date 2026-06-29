@@ -56,6 +56,7 @@ export function registerSessionLogRoute(app) {
       ip,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
+      geoSource: coords?.source ?? null,
       event,
     });
 

@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS player_sessions (
   ip         TEXT,
   lat        DOUBLE PRECISION,
   lng        DOUBLE PRECISION,
+  geo_source TEXT,
   event      TEXT NOT NULL DEFAULT 'join',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

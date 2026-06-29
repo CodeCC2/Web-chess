@@ -55,6 +55,7 @@ export async function createUser({
   registrationIp = null,
   registrationLat = null,
   registrationLng = null,
+  registrationGeoSource = null,
 }) {
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   const row = {
@@ -70,8 +71,10 @@ export async function createUser({
     if (reg) {
       row.registration_lat = reg.lat;
       row.registration_lng = reg.lng;
+      row.registration_geo_source = registrationGeoSource;
       row.last_lat = reg.lat;
       row.last_lng = reg.lng;
+      row.last_geo_source = registrationGeoSource;
     }
   }
   const { data, error } = await supabase.from("users").insert(row).select("*").single();
@@ -123,9 +126,11 @@ export async function updateLastLocation(userId, { ip, lat, lng } = {}) {
   if (coords) {
     patch.last_lat = coords.lat;
     patch.last_lng = coords.lng;
+    patch.last_geo_source = coords.source;
     if (!hasValidCoords(user?.registration_lat, user?.registration_lng)) {
       patch.registration_lat = coords.lat;
       patch.registration_lng = coords.lng;
+      patch.registration_geo_source = coords.source;
     }
   }
   if (Object.keys(patch).length <= 1) return;
@@ -142,7 +147,7 @@ export async function listUsers(limit = 200) {
   const { data, error } = await supabase
     .from("users")
     .select(
-      "id,username,display_name,avatar_url,role,wins,losses,draws,registration_ip,last_ip,registration_lat,registration_lng,last_lat,last_lng,created_at"
+      "id,username,display_name,avatar_url,role,wins,losses,draws,registration_ip,last_ip,registration_lat,registration_lng,registration_geo_source,last_lat,last_lng,last_geo_source,created_at"
     )
     .order("created_at", { ascending: false })
     .limit(limit);

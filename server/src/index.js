@@ -263,7 +263,7 @@ function declareOpponentWin(room, roomId, leavingColor) {
 
 async function sessionLog(socket, event, { roomId, color, name, lat, lng } = {}) {
   const ip = socket.data.clientIp ?? clientIpFromSocket(socket);
-  const coords = await resolveCoords({
+  const resolved = await resolveCoords({
     ip,
     lat: lat ?? socket.data.lastLat,
     lng: lng ?? socket.data.lastLng,
@@ -273,8 +273,9 @@ async function sessionLog(socket, event, { roomId, color, name, lat, lng } = {})
     roomId: roomId ?? socket.data.roomId ?? null,
     color: color ?? null,
     ip,
-    lat: coords?.lat ?? null,
-    lng: coords?.lng ?? null,
+    lat: resolved?.lat ?? null,
+    lng: resolved?.lng ?? null,
+    geoSource: resolved?.source ?? null,
     event,
   });
 }
@@ -430,6 +431,7 @@ io.on("connection", (socket) => {
       if (coords) {
         socket.data.lastLat = coords.lat;
         socket.data.lastLng = coords.lng;
+        socket.data.lastGeoSource = coords.source;
       }
 
       socket.data.roomId = roomId;

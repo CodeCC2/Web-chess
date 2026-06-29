@@ -44,7 +44,7 @@ export function logSupabaseError(context, err) {
   }
 }
 
-/** @param {{ name: string, roomId?: string|null, color?: string|null, ip?: string|null, lat?: number|null, lng?: number|null, event?: string }} row */
+/** @param {{ name: string, roomId?: string|null, color?: string|null, ip?: string|null, lat?: number|null, lng?: number|null, geoSource?: string|null, event?: string }} row */
 export async function logPlayerSession(row) {
   if (!supabase) return;
   try {
@@ -59,6 +59,7 @@ export async function logPlayerSession(row) {
     if (coords) {
       insert.lat = coords.lat;
       insert.lng = coords.lng;
+      insert.geo_source = row.geoSource ?? null;
     }
     const { error } = await supabase.from("player_sessions").insert(insert);
     if (error) console.error("logPlayerSession:", error.message);
