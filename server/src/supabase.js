@@ -43,17 +43,26 @@ export function logSupabaseError(context, err) {
   }
 }
 
-/** @param {{ name: string, roomId?: string|null, color?: string|null, ip?: string|null, event?: string }} row */
+/** @param {{ name: string, roomId?: string|null, color?: string|null, ip?: string|null, lat?: number|null, lng?: number|null, event?: string }} row */
 export async function logPlayerSession(row) {
   if (!supabase) return;
   try {
-    const { error } = await supabase.from("player_sessions").insert({
+    const insert = {
       name: row.name,
       room_id: row.roomId ?? null,
       color: row.color ?? null,
       ip: row.ip ?? null,
       event: row.event || "join",
-    });
+    };
+    if (row.lat != null && row.lng != null) {
+      const la = Number(row.lat);
+      const ln = Number(row.lng);
+      if (Number.isFinite(la) && Number.isFinite(ln)) {
+        insert.lat = la;
+        insert.lng = ln;
+      }
+    }
+    const { error } = await supabase.from("player_sessions").insert(insert);
     if (error) console.error("logPlayerSession:", error.message);
   } catch (err) {
     logSupabaseError("logPlayerSession:", err);

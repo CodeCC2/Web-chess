@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS player_sessions (
   room_id    TEXT,
   color      TEXT,
   ip         TEXT,
+  lat        DOUBLE PRECISION,
+  lng        DOUBLE PRECISION,
   event      TEXT NOT NULL DEFAULT 'join',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

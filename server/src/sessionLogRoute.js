@@ -1,4 +1,5 @@
 import { logPlayerSession, clientIpFromRequest, supabaseConfigured } from "./supabase.js";
+import { parseCoords } from "./users.js";
 
 const ALLOWED_MODES = new Set(["bot", "tutorial", "puzzle"]);
 const ALLOWED_EVENTS = new Set(["join", "leave"]);
@@ -42,11 +43,15 @@ export function registerSessionLogRoute(app) {
       return;
     }
 
+    const coords = parseCoords(req.body?.lat, req.body?.lng);
+
     void logPlayerSession({
       name,
       roomId: mode,
       color: detail,
       ip,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
       event,
     });
 

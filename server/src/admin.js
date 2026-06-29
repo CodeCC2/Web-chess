@@ -61,6 +61,9 @@ function layout(title, body, { loggedIn = false } = {}) {
     .loc-geo { display:block; font-size:0.75rem; color:var(--muted); text-decoration:none; margin-top:2px; }
     a.loc-geo:hover { color:var(--gold); text-decoration:underline; }
     .stats-cell { white-space:nowrap; font-size:0.82rem; color:var(--muted); }
+    .ctx-cell { line-height:1.35; }
+    .ctx-room { font-size:0.85rem; word-break:break-all; }
+    .ctx-detail { display:block; font-size:0.75rem; color:var(--muted); margin-top:2px; }
   </style>
 </head>
 <body>
@@ -109,7 +112,7 @@ function supabaseWarningPage() {
 async function fetchLogs(limit = 200) {
   const { data, error } = await supabase
     .from("player_sessions")
-    .select("id,name,room_id,color,ip,event,created_at")
+    .select("id,name,room_id,color,ip,lat,lng,event,created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
@@ -155,6 +158,15 @@ function statsCell(wins, losses, draws) {
   return `<span class="stats-cell" title="ชนะ / แพ้ / เสมอ">${wins ?? 0}W · ${losses ?? 0}L · ${draws ?? 0}D</span>`;
 }
 
+function sessionContextCell(roomId, color) {
+  const room = escapeHtml(roomId || "—");
+  const detail = color ? escapeHtml(color) : null;
+  if (!detail || detail === room) {
+    return `<span class="ctx-room">${room}</span>`;
+  }
+  return `<div class="ctx-cell"><div class="ctx-room">${room}</div><span class="ctx-detail">${detail}</span></div>`;
+}
+
 const FLASH_MESSAGES = {
   deleted: "ลบรายการแล้ว",
   ip_deleted: "ลบ log ของ IP นี้แล้ว",
@@ -170,10 +182,9 @@ function dashboardPage({ logs, users, flash = "" }) {
         <td>${i + 1}</td>
         <td>${formatTime(r.created_at)}</td>
         <td>${escapeHtml(r.name)}</td>
-        <td>${escapeHtml(r.room_id || "—")}</td>
-        <td>${escapeHtml(r.color || "—")}</td>
+        <td>${sessionContextCell(r.room_id, r.color)}</td>
         <td><span class="badge">${escapeHtml(r.event)}</span></td>
-        <td>${escapeHtml(r.ip || "—")}</td>
+        <td>${locationCell(r.ip, r.lat, r.lng)}</td>
         <td class="actions">
           <form method="post" action="/admin/delete/${r.id}" onsubmit="return confirm('ลบรายการนี้?')">
             <button type="submit" class="danger">ลบ</button>
@@ -244,9 +255,9 @@ function dashboardPage({ logs, users, flash = "" }) {
       <div class="card" style="overflow-x:auto">
         <table>
           <thead>
-            <tr><th>#</th><th>เวลา</th><th>ชื่อ</th><th>โหมด/ห้อง</th><th>รายละเอียด</th><th>เหตุการณ์</th><th>IP</th><th></th></tr>
+            <tr><th>#</th><th>เวลา</th><th>ชื่อ</th><th>โหมด<span class="th-hint">ห้อง · รายละเอียด</span></th><th>เหตุการณ์</th><th>ที่อยู่<span class="th-hint">IP · พิกัด</span></th><th></th></tr>
           </thead>
-          <tbody>${logRows || '<tr><td colspan="8">ยังไม่มี log</td></tr>'}</tbody>
+          <tbody>${logRows || '<tr><td colspan="7">ยังไม่มี log</td></tr>'}</tbody>
         </table>
       </div>
     </div>`,
