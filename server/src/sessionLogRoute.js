@@ -1,5 +1,5 @@
 import { logPlayerSession, clientIpFromRequest, supabaseConfigured } from "./supabase.js";
-import { parseCoords } from "./users.js";
+import { parseCoords } from "./coords.js";
 
 const ALLOWED_MODES = new Set(["bot", "tutorial", "puzzle"]);
 const ALLOWED_EVENTS = new Set(["join", "leave"]);

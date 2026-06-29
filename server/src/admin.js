@@ -140,9 +140,11 @@ function formatTime(iso) {
 }
 
 function formatCoords(lat, lng) {
+  if (lat == null || lng == null || lat === "" || lng === "") return null;
   const la = Number(lat);
   const ln = Number(lng);
   if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+  if (Math.abs(la) < 1e-6 && Math.abs(ln) < 1e-6) return null;
   return `${la.toFixed(5)}, ${ln.toFixed(5)}`;
 }
 

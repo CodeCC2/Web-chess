@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { supabase, supabaseConfigured } from "./supabase.js";
+import { parseCoords } from "./coords.js";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const BCRYPT_ROUNDS = 10;
@@ -43,13 +44,7 @@ export async function findUserById(id) {
   return data;
 }
 
-export function parseCoords(lat, lng) {
-  const la = Number(lat);
-  const ln = Number(lng);
-  if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
-  if (la < -90 || la > 90 || ln < -180 || ln > 180) return null;
-  return { lat: la, lng: ln };
-}
+export { parseCoords } from "./coords.js";
 
 export async function createUser({
   username,
@@ -70,10 +65,13 @@ export async function createUser({
     last_ip: registrationIp,
   };
   if (registrationLat != null && registrationLng != null) {
-    row.registration_lat = registrationLat;
-    row.registration_lng = registrationLng;
-    row.last_lat = registrationLat;
-    row.last_lng = registrationLng;
+    const reg = parseCoords(registrationLat, registrationLng);
+    if (reg) {
+      row.registration_lat = reg.lat;
+      row.registration_lng = reg.lng;
+      row.last_lat = reg.lat;
+      row.last_lng = reg.lng;
+    }
   }
   const { data, error } = await supabase.from("users").insert(row).select("*").single();
   if (error) {

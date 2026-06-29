@@ -12,14 +12,19 @@ export function getGeoPosition() {
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        cachedGeo = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        };
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng) &&
+          !(Math.abs(lat) < 1e-6 && Math.abs(lng) < 1e-6)
+        ) {
+          cachedGeo = { lat, lng };
+        }
         resolve(cachedGeo);
       },
       () => resolve(cachedGeo),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 }
+      { enableHighAccuracy: true, timeout: 12_000, maximumAge: 60_000 }
     );
   });
 }

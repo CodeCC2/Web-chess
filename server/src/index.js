@@ -22,7 +22,8 @@ import { logPlayerSession, clientIpFromSocket } from "./supabase.js";
 import { registerSessionLogRoute } from "./sessionLogRoute.js";
 import { registerAuthRoutes, initAuth } from "./auth.js";
 import { parseSessionFromCookieHeader } from "./session.js";
-import { recordOnlineResult, updateLastLocation, parseCoords } from "./users.js";
+import { recordOnlineResult, updateLastLocation } from "./users.js";
+import { parseCoords } from "./coords.js";
 import {
   initSiteAssets,
   registerSiteAssetRoutes,

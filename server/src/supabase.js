@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { parseCoords } from "./coords.js";
 
 function cleanEnv(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -54,13 +55,10 @@ export async function logPlayerSession(row) {
       ip: row.ip ?? null,
       event: row.event || "join",
     };
-    if (row.lat != null && row.lng != null) {
-      const la = Number(row.lat);
-      const ln = Number(row.lng);
-      if (Number.isFinite(la) && Number.isFinite(ln)) {
-        insert.lat = la;
-        insert.lng = ln;
-      }
+    const coords = parseCoords(row.lat, row.lng);
+    if (coords) {
+      insert.lat = coords.lat;
+      insert.lng = coords.lng;
     }
     const { error } = await supabase.from("player_sessions").insert(insert);
     if (error) console.error("logPlayerSession:", error.message);
