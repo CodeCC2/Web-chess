@@ -22,7 +22,7 @@ import { logPlayerSession, clientIpFromSocket } from "./supabase.js";
 import { registerSessionLogRoute } from "./sessionLogRoute.js";
 import { registerAuthRoutes, initAuth } from "./auth.js";
 import { parseSessionFromCookieHeader } from "./session.js";
-import { recordOnlineResult, updateLastIp } from "./users.js";
+import { recordOnlineResult, updateLastLocation } from "./users.js";
 import {
   initSiteAssets,
   registerSiteAssetRoutes,
@@ -362,7 +362,7 @@ io.on("connection", (socket) => {
 
   socket.on(
     "joinGame",
-    ({ roomId, name, timeControl, reconnectToken } = {}, ack) => {
+    ({ roomId, name, timeControl, reconnectToken, lat, lng } = {}, ack) => {
       if (!roomId || typeof roomId !== "string") {
         ack?.({ ok: false, error: "รหัสห้องไม่ถูกต้อง" });
         return;
@@ -434,7 +434,11 @@ io.on("connection", (socket) => {
       });
 
       if (socket.data.userId) {
-        void updateLastIp(socket.data.userId, socket.data.clientIp);
+        void updateLastLocation(socket.data.userId, {
+          ip: socket.data.clientIp,
+          lat,
+          lng,
+        });
       }
 
       if (color && reclaimColor) {

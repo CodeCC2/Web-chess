@@ -17,7 +17,8 @@ import {
   validateUsername,
   verifyUserPassword,
   ensureAdminUser,
-  updateLastIp,
+  updateLastLocation,
+  parseCoords,
 } from "./users.js";
 
 const upload = multer({
@@ -104,11 +105,14 @@ export function registerAuthRoutes(app) {
         });
         return;
       }
+      const coords = parseCoords(req.body?.lat, req.body?.lng);
       const user = await createUser({
         username,
         password,
         displayName: displayName.slice(0, 30) || username,
         registrationIp: clientIpFromRequest(req),
+        registrationLat: coords?.lat ?? null,
+        registrationLng: coords?.lng ?? null,
       });
       const token = createSessionToken(user);
       setSessionCookie(res, token);
@@ -145,7 +149,11 @@ export function registerAuthRoutes(app) {
         return;
       }
       const user = publicUser(row);
-      await updateLastIp(row.id, clientIpFromRequest(req));
+      await updateLastLocation(row.id, {
+        ip: clientIpFromRequest(req),
+        lat: req.body?.lat,
+        lng: req.body?.lng,
+      });
       const token = createSessionToken(user);
       setSessionCookie(res, token);
       res.json({ ok: true, user });

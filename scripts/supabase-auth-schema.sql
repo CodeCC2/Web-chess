@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
   draws         INT NOT NULL DEFAULT 0,
   registration_ip    TEXT,
   last_ip            TEXT,
+  registration_lat   DOUBLE PRECISION,
+  registration_lng   DOUBLE PRECISION,
+  last_lat           DOUBLE PRECISION,
+  last_lng           DOUBLE PRECISION,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

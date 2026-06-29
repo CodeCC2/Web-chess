@@ -55,6 +55,12 @@ function layout(title, body, { loggedIn = false } = {}) {
     .favicon-form { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
     .favicon-form input[type=file] { font-size:0.85rem; color:var(--muted); }
     .favicon-preview { width:32px; height:32px; border-radius:6px; border:1px solid var(--border); }
+    .th-hint { display:block; font-weight:400; font-size:0.7rem; color:var(--muted); margin-top:2px; }
+    .loc-cell { line-height:1.35; }
+    .loc-ip { font-size:0.85rem; word-break:break-all; }
+    .loc-geo { display:block; font-size:0.75rem; color:var(--muted); text-decoration:none; margin-top:2px; }
+    a.loc-geo:hover { color:var(--gold); text-decoration:underline; }
+    .stats-cell { white-space:nowrap; font-size:0.82rem; color:var(--muted); }
   </style>
 </head>
 <body>
@@ -130,6 +136,25 @@ function formatTime(iso) {
   }
 }
 
+function formatCoords(lat, lng) {
+  const la = Number(lat);
+  const ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+  return `${la.toFixed(5)}, ${ln.toFixed(5)}`;
+}
+
+function locationCell(ip, lat, lng) {
+  const coords = formatCoords(lat, lng);
+  const geoLine = coords
+    ? `<a class="loc-geo" href="https://www.google.com/maps?q=${Number(lat)},${Number(lng)}" target="_blank" rel="noopener">${escapeHtml(coords)}</a>`
+    : `<span class="loc-geo">—</span>`;
+  return `<div class="loc-cell"><div class="loc-ip">${escapeHtml(ip || "—")}</div>${geoLine}</div>`;
+}
+
+function statsCell(wins, losses, draws) {
+  return `<span class="stats-cell" title="ชนะ / แพ้ / เสมอ">${wins ?? 0}W · ${losses ?? 0}L · ${draws ?? 0}D</span>`;
+}
+
 const FLASH_MESSAGES = {
   deleted: "ลบรายการแล้ว",
   ip_deleted: "ลบ log ของ IP นี้แล้ว",
@@ -173,11 +198,9 @@ function dashboardPage({ logs, users, flash = "" }) {
         <td>${escapeHtml(u.username)}</td>
         <td>${escapeHtml(u.display_name)}</td>
         <td><span class="badge${u.role === "admin" ? " admin" : ""}">${escapeHtml(u.role)}</span></td>
-        <td>${escapeHtml(u.last_ip || "—")}</td>
-        <td>${escapeHtml(u.registration_ip || "—")}</td>
-        <td>${u.wins ?? 0}</td>
-        <td>${u.losses ?? 0}</td>
-        <td>${u.draws ?? 0}</td>
+        <td>${locationCell(u.last_ip, u.last_lat, u.last_lng)}</td>
+        <td>${locationCell(u.registration_ip, u.registration_lat, u.registration_lng)}</td>
+        <td>${statsCell(u.wins, u.losses, u.draws)}</td>
         <td>${formatTime(u.created_at)}</td>
       </tr>`
     )
@@ -204,9 +227,9 @@ function dashboardPage({ logs, users, flash = "" }) {
       <h2>สมาชิกในระบบ (${users.length})</h2>
       <table>
         <thead>
-          <tr><th>#</th><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>บทบาท</th><th>IP ล่าสุด</th><th>IP ตอนสมัคร</th><th>ชนะ</th><th>แพ้</th><th>เสมอ</th><th>สมัครเมื่อ</th></tr>
+          <tr><th>#</th><th>ชื่อผู้ใช้</th><th>ชื่อแสดง</th><th>บทบาท</th><th>ล่าสุด<span class="th-hint">IP · พิกัด</span></th><th>ตอนสมัคร<span class="th-hint">IP · พิกัด</span></th><th>สถิติ<span class="th-hint">ชนะ·แพ้·เสมอ</span></th><th>สมัครเมื่อ</th></tr>
         </thead>
-        <tbody>${userRows || '<tr><td colspan="10">ยังไม่มีสมาชิก</td></tr>'}</tbody>
+        <tbody>${userRows || '<tr><td colspan="8">ยังไม่มีสมาชิก</td></tr>'}</tbody>
       </table>
     </div>
 

@@ -43,26 +43,39 @@ export async function findUserById(id) {
   return data;
 }
 
+export function parseCoords(lat, lng) {
+  const la = Number(lat);
+  const ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+  if (la < -90 || la > 90 || ln < -180 || ln > 180) return null;
+  return { lat: la, lng: ln };
+}
+
 export async function createUser({
   username,
   password,
   displayName,
   role = "user",
   registrationIp = null,
+  registrationLat = null,
+  registrationLng = null,
 }) {
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-  const { data, error } = await supabase
-    .from("users")
-    .insert({
-      username,
-      password_hash: passwordHash,
-      display_name: displayName || username,
-      role,
-      registration_ip: registrationIp,
-      last_ip: registrationIp,
-    })
-    .select("*")
-    .single();
+  const row = {
+    username,
+    password_hash: passwordHash,
+    display_name: displayName || username,
+    role,
+    registration_ip: registrationIp,
+    last_ip: registrationIp,
+  };
+  if (registrationLat != null && registrationLng != null) {
+    row.registration_lat = registrationLat;
+    row.registration_lng = registrationLng;
+    row.last_lat = registrationLat;
+    row.last_lng = registrationLng;
+  }
+  const { data, error } = await supabase.from("users").insert(row).select("*").single();
   if (error) {
     if (error.code === "23505") throw new Error("username_taken");
     throw new Error(error.message);
@@ -102,23 +115,30 @@ export async function updateAvatarUrl(userId, avatarUrl) {
   return mapUser(data);
 }
 
+export async function updateLastLocation(userId, { ip, lat, lng } = {}) {
+  if (!userId) return;
+  const patch = { updated_at: new Date().toISOString() };
+  if (ip) patch.last_ip = ip;
+  const coords = parseCoords(lat, lng);
+  if (coords) {
+    patch.last_lat = coords.lat;
+    patch.last_lng = coords.lng;
+  }
+  if (Object.keys(patch).length <= 1) return;
+  const { error } = await supabase.from("users").update(patch).eq("id", userId);
+  if (error) console.error("updateLastLocation:", error.message);
+}
+
+/** @deprecated use updateLastLocation */
 export async function updateLastIp(userId, ip) {
-  if (!userId || !ip) return;
-  const { error } = await supabase
-    .from("users")
-    .update({
-      last_ip: ip,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", userId);
-  if (error) console.error("updateLastIp:", error.message);
+  return updateLastLocation(userId, { ip });
 }
 
 export async function listUsers(limit = 200) {
   const { data, error } = await supabase
     .from("users")
     .select(
-      "id,username,display_name,avatar_url,role,wins,losses,draws,registration_ip,last_ip,created_at"
+      "id,username,display_name,avatar_url,role,wins,losses,draws,registration_ip,last_ip,registration_lat,registration_lng,last_lat,last_lng,created_at"
     )
     .order("created_at", { ascending: false })
     .limit(limit);

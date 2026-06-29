@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { socket } from "./socket.js";
+import { getGeoPosition } from "./geo.js";
 
 const AuthContext = createContext(null);
 
@@ -40,9 +41,10 @@ export function AuthProvider({ children }) {
   }, [refreshUser]);
 
   const login = useCallback(async (username, password) => {
+    const geo = await getGeoPosition();
     const { res, data } = await authFetch("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, ...(geo || {}) }),
     });
     if (!res.ok) {
       throw new Error(data.message || "เข้าสู่ระบบไม่สำเร็จ");
@@ -54,9 +56,10 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(async (username, password, displayName) => {
+    const geo = await getGeoPosition();
     const { res, data } = await authFetch("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ username, password, displayName }),
+      body: JSON.stringify({ username, password, displayName, ...(geo || {}) }),
     });
     if (!res.ok) {
       throw new Error(data.message || "สมัครไม่สำเร็จ");

@@ -1,0 +1,6 @@
+-- Run once in Supabase SQL Editor (adds lat/lng to users table)
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS registration_lat DOUBLE PRECISION;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS registration_lng DOUBLE PRECISION;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_lat DOUBLE PRECISION;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_lng DOUBLE PRECISION;

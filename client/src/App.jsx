@@ -24,6 +24,7 @@ import {
 } from "./boardFeedback.js";
 import { saveSession, loadSession, clearSession } from "./gameSession.js";
 import { logClientSession } from "./sessionLog.js";
+import { getGeoPosition } from "./geo.js";
 import { copyPgn, downloadPgn } from "./pgnUtils.js";
 import AppBrand from "./components/AppBrand.jsx";
 import GameOverOverlay from "./components/GameOverOverlay.jsx";
@@ -310,8 +311,9 @@ export default function App() {
   }, [name, timeControl]);
 
   const joinGame = useCallback(
-    (targetRoom, { reconnectToken } = {}) => {
+    async (targetRoom, { reconnectToken } = {}) => {
       const id = (targetRoom || roomInput || randomRoomId()).toUpperCase();
+      const geo = await getGeoPosition();
       socket.emit(
         "joinGame",
         {
@@ -319,6 +321,7 @@ export default function App() {
           name: (user?.displayName || name).trim() || "ไม่ระบุชื่อ",
           timeControl,
           reconnectToken,
+          ...(geo || {}),
         },
         (res) => applyJoinResult(id, res)
       );
@@ -338,12 +341,13 @@ export default function App() {
       return;
     }
 
-    const tryReconnect = () => {
+    const tryReconnect = async () => {
       if (reconnectAttempted.current) return;
       reconnectAttempted.current = true;
       if (session.name) setName(session.name);
       if (session.timeControl) setTimeControl(session.timeControl);
       setRoomInput(session.roomId);
+      const geo = await getGeoPosition();
       socket.emit(
         "joinGame",
         {
@@ -351,6 +355,7 @@ export default function App() {
           name: session.name || "ไม่ระบุชื่อ",
           timeControl: session.timeControl || "none",
           reconnectToken: session.token,
+          ...(geo || {}),
         },
         (res) => {
           if (!applyJoinResult(session.roomId, res)) {
