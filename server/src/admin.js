@@ -215,19 +215,25 @@ async function clearIpGeoFromDb() {
   let usersCleared = 0;
   let logsCleared = 0;
 
-  const { data: users } = await supabase
+  const { data: users, error: usersErr } = await supabase
     .from("users")
-    .select("id,last_geo_source,registration_geo_source")
+    .select(
+      "id,last_lat,last_lng,last_geo_source,registration_lat,registration_lng,registration_geo_source"
+    )
     .limit(500);
+  if (usersErr) throw new Error(usersErr.message);
 
   for (const u of users || []) {
     const patch = {};
-    if (u.last_geo_source === "ip") {
+    if (u.last_geo_source !== "gps" && hasValidCoords(u.last_lat, u.last_lng)) {
       patch.last_lat = null;
       patch.last_lng = null;
       patch.last_geo_source = null;
     }
-    if (u.registration_geo_source === "ip") {
+    if (
+      u.registration_geo_source !== "gps" &&
+      hasValidCoords(u.registration_lat, u.registration_lng)
+    ) {
       patch.registration_lat = null;
       patch.registration_lng = null;
       patch.registration_geo_source = null;
@@ -242,18 +248,19 @@ async function clearIpGeoFromDb() {
 
   const { data: logs, error: logsErr } = await supabase
     .from("player_sessions")
-    .select("id")
-    .eq("geo_source", "ip")
+    .select("id,lat,lng,geo_source")
+    .order("created_at", { ascending: false })
     .limit(1000);
   if (logsErr) throw new Error(logsErr.message);
 
-  if (logs?.length) {
-    const ids = logs.map((r) => r.id);
+  for (const row of logs || []) {
+    if (row.geo_source === "gps") continue;
+    if (!hasValidCoords(row.lat, row.lng)) continue;
     const { error } = await supabase
       .from("player_sessions")
       .update({ lat: null, lng: null, geo_source: null })
-      .in("id", ids);
-    if (!error) logsCleared = ids.length;
+      .eq("id", row.id);
+    if (!error) logsCleared += 1;
   }
 
   return { usersCleared, logsCleared };
@@ -310,7 +317,7 @@ const FLASH_MESSAGES = {
   favicon_updated: "อัปเดตไอคอนเว็บแล้ว — รีเฟรชแท็บเบราว์เซอร์ (อาจต้อง Ctrl+F5)",
   favicon_error: "อัปโหลดไอคอนไม่สำเร็จ — ตรวจสอบว่าสร้าง bucket site-assets ใน Supabase Storage",
   geo_backfilled: "เติมพิกัดจาก IP แล้ว — รีเฟรชหน้านี้",
-  geo_ip_cleared: "ลบพิกัดจาก IP แล้ว (GPS ยังอยู่) — รีเฟรชหน้านี้",
+  geo_ip_cleared: "ลบพิกัดแล้ว (GPS ยังอยู่)",
 };
 
 function dashboardPage({ logs, users, flash = "" }) {
@@ -441,7 +448,12 @@ export function registerAdminRoutes(app) {
         fetchLogsSafe(),
         fetchUsersSafe(),
       ]);
-      const flash = FLASH_MESSAGES[req.query.flash] || "";
+      let flash = FLASH_MESSAGES[req.query.flash] || "";
+      if (req.query.flash === "geo_ip_cleared") {
+        const u = Number(req.query.u) || 0;
+        const l = Number(req.query.l) || 0;
+        flash = `${FLASH_MESSAGES.geo_ip_cleared} — สมาชิก ${u} คน, log ${l} รายการ`;
+      }
       res.send(dashboardPage({ logs, users, flash }));
     } catch (err) {
       res.status(500).send(layout("ข้อผิดพลาด", `<div class="card err">${escapeHtml(err.message)}</div>`, { loggedIn: true }));
