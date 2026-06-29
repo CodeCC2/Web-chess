@@ -8,3 +8,7 @@ export function parseCoords(lat, lng) {
   if (Math.abs(la) < 1e-6 && Math.abs(ln) < 1e-6) return null;
   return { lat: la, lng: ln };
 }
+
+export function hasValidCoords(lat, lng) {
+  return parseCoords(lat, lng) !== null;
+}

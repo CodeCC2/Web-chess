@@ -15,6 +15,28 @@ function isPrivateIp(ip) {
   );
 }
 
+async function fetchIpWho(ip) {
+  const res = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, {
+    signal: AbortSignal.timeout(4000),
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data?.success) return null;
+  return parseCoords(data.latitude, data.longitude);
+}
+
+async function fetchIpApi(ip) {
+  const res = await fetch(
+    `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,lat,lon`,
+    { signal: AbortSignal.timeout(4000) }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data?.status !== "success") return null;
+  return parseCoords(data.lat, data.lon);
+}
+
 /** Approximate lat/lng from public IP (city-level). Cached 24h per IP. */
 export async function lookupIpGeo(ip) {
   if (isPrivateIp(ip)) return null;
@@ -23,14 +45,8 @@ export async function lookupIpGeo(ip) {
   if (hit && hit.expires > Date.now()) return hit.coords;
 
   try {
-    const res = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, {
-      signal: AbortSignal.timeout(4000),
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data?.success) return null;
-    const coords = parseCoords(data.latitude, data.longitude);
+    let coords = await fetchIpWho(ip).catch(() => null);
+    if (!coords) coords = await fetchIpApi(ip).catch(() => null);
     if (!coords) return null;
     cache.set(ip, { coords, expires: Date.now() + CACHE_MS });
     return coords;

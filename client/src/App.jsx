@@ -24,7 +24,7 @@ import {
 } from "./boardFeedback.js";
 import { saveSession, loadSession, clearSession } from "./gameSession.js";
 import { logClientSession } from "./sessionLog.js";
-import { getGeoPosition } from "./geo.js";
+import { getGeoPosition, primeGeoPosition } from "./geo.js";
 import { copyPgn, downloadPgn } from "./pgnUtils.js";
 import AppBrand from "./components/AppBrand.jsx";
 import GameOverOverlay from "./components/GameOverOverlay.jsx";
@@ -163,6 +163,14 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const fromUrl = params.get("room")?.trim().toUpperCase();
     if (fromUrl) setRoomInput(fromUrl);
+  }, []);
+
+  useEffect(() => {
+    const onFirstClick = () => {
+      void primeGeoPosition();
+    };
+    window.addEventListener("pointerdown", onFirstClick, { once: true });
+    return () => window.removeEventListener("pointerdown", onFirstClick);
   }, []);
 
   useEffect(() => {

@@ -34,6 +34,7 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "*";
 const MAX_CHAT_LENGTH = 200;
 const MAX_CHAT_MESSAGES = 100;
 const DISCONNECT_GRACE_MS = 120_000;
+const BUILD_ID = process.env.RENDER_GIT_COMMIT?.slice(0, 7) || "dev";
 
 function sanitizeChatText(text) {
   if (typeof text !== "string") return "";
@@ -51,8 +52,11 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: "1kb" }));
 
+/** @type {Map<string, object>} */
+const rooms = new Map();
+
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", rooms: rooms.size });
+  res.json({ status: "ok", rooms: rooms.size, build: BUILD_ID });
 });
 
 registerAuthRoutes(app);
@@ -89,9 +93,6 @@ io.use((socket, next) => {
   }
   next();
 });
-
-/** @type {Map<string, object>} */
-const rooms = new Map();
 
 function createRoom(timeControlKey = "none") {
   const timeControl = resolveTimeControl(timeControlKey);

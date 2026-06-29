@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { supabase, supabaseConfigured } from "./supabase.js";
-import { parseCoords } from "./coords.js";
-import { resolveCoords } from "./ipGeo.js";
+import { parseCoords, hasValidCoords } from "./coords.js";
+import { resolveCoords, lookupIpGeo } from "./ipGeo.js";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const BCRYPT_ROUNDS = 10;
@@ -116,12 +116,17 @@ export async function updateAvatarUrl(userId, avatarUrl) {
 
 export async function updateLastLocation(userId, { ip, lat, lng } = {}) {
   if (!userId) return;
+  const user = await findUserById(userId);
   const patch = { updated_at: new Date().toISOString() };
   if (ip) patch.last_ip = ip;
   const coords = await resolveCoords({ ip, lat, lng });
   if (coords) {
     patch.last_lat = coords.lat;
     patch.last_lng = coords.lng;
+    if (!hasValidCoords(user?.registration_lat, user?.registration_lng)) {
+      patch.registration_lat = coords.lat;
+      patch.registration_lng = coords.lng;
+    }
   }
   if (Object.keys(patch).length <= 1) return;
   const { error } = await supabase.from("users").update(patch).eq("id", userId);

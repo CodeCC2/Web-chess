@@ -4,6 +4,8 @@ import { getSessionFromRequest } from "./auth.js";
 import { findUserById, listUsers } from "./users.js";
 import { clearSessionCookie } from "./session.js";
 import { saveFaviconFromBuffer } from "./siteAssets.js";
+import { lookupIpGeo } from "./ipGeo.js";
+import { hasValidCoords } from "./coords.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -131,6 +133,62 @@ function fetchUsersSafe(limit = 200) {
   });
 }
 
+async function backfillGeoFromIp() {
+  if (!supabase) return { usersUpdated: 0, logsUpdated: 0 };
+
+  let usersUpdated = 0;
+  let logsUpdated = 0;
+
+  const users = await listUsers(500);
+  for (const u of users) {
+    const patch = {};
+    const lastIp = u.last_ip || u.registration_ip;
+    if (!hasValidCoords(u.last_lat, u.last_lng) && lastIp) {
+      const coords = await lookupIpGeo(lastIp);
+      if (coords) {
+        patch.last_lat = coords.lat;
+        patch.last_lng = coords.lng;
+      }
+    }
+    if (!hasValidCoords(u.registration_lat, u.registration_lng)) {
+      const regIp = u.registration_ip || u.last_ip;
+      if (regIp) {
+        const coords = await lookupIpGeo(regIp);
+        if (coords) {
+          patch.registration_lat = coords.lat;
+          patch.registration_lng = coords.lng;
+        }
+      }
+    }
+    if (Object.keys(patch).length === 0) continue;
+    const { error } = await supabase
+      .from("users")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", u.id);
+    if (!error) usersUpdated += 1;
+  }
+
+  const { data: logs, error: logsErr } = await supabase
+    .from("player_sessions")
+    .select("id,ip,lat,lng")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (logsErr) throw new Error(logsErr.message);
+
+  for (const row of logs || []) {
+    if (hasValidCoords(row.lat, row.lng) || !row.ip) continue;
+    const coords = await lookupIpGeo(row.ip);
+    if (!coords) continue;
+    const { error } = await supabase
+      .from("player_sessions")
+      .update({ lat: coords.lat, lng: coords.lng })
+      .eq("id", row.id);
+    if (!error) logsUpdated += 1;
+  }
+
+  return { usersUpdated, logsUpdated };
+}
+
 function formatTime(iso) {
   try {
     return new Date(iso).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
@@ -175,6 +233,7 @@ const FLASH_MESSAGES = {
   purged: "ลบ log เก่ากว่า 30 วันแล้ว",
   favicon_updated: "อัปเดตไอคอนเว็บแล้ว — รีเฟรชแท็บเบราว์เซอร์ (อาจต้อง Ctrl+F5)",
   favicon_error: "อัปโหลดไอคอนไม่สำเร็จ — ตรวจสอบว่าสร้าง bucket site-assets ใน Supabase Storage",
+  geo_backfilled: "เติมพิกัดจาก IP แล้ว — รีเฟรชหน้านี้",
 };
 
 function dashboardPage({ logs, users, flash = "" }) {
@@ -251,6 +310,9 @@ function dashboardPage({ logs, users, flash = "" }) {
         <h2 style="margin:0;flex:1">Log ผู้เล่น</h2>
         <form method="post" action="/admin/purge-old" onsubmit="return confirm('ลบ log เก่ากว่า 30 วัน?')">
           <button type="submit" class="danger">ลบ log เก่ากว่า 30 วัน</button>
+        </form>
+        <form method="post" action="/admin/backfill-geo" onsubmit="return confirm('เติมพิกัดจาก IP ให้ข้อมูลที่ยังว่างหรือเป็น 0?')">
+          <button type="submit" class="primary">เติมพิกัดจาก IP</button>
         </form>
         <a class="btn" href="/admin">รีเฟรช</a>
       </div>
@@ -364,5 +426,22 @@ export function registerAdminRoutes(app) {
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     await supabase.from("player_sessions").delete().lt("created_at", cutoff);
     res.redirect(302, "/admin?flash=purged");
+  });
+
+  app.post("/admin/backfill-geo", async (req, res) => {
+    const admin = await requireAdmin(req, res);
+    if (!admin || !supabase) {
+      res.redirect(302, "/admin");
+      return;
+    }
+    try {
+      await backfillGeoFromIp();
+      res.redirect(302, "/admin?flash=geo_backfilled");
+    } catch (err) {
+      console.error("backfill-geo:", err);
+      res.status(500).send(
+        layout("ข้อผิดพลาด", `<div class="card err">${escapeHtml(err.message)}</div>`, { loggedIn: true })
+      );
+    }
   });
 }
