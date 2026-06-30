@@ -228,6 +228,11 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
     [completed, waitingOpponent, moveFrom, attemptMove, highlightLegalMoves]
   );
 
+  const onPieceClick = useCallback(
+    (_piece, square) => onSquareClick(square),
+    [onSquareClick]
+  );
+
   const progressPct = completed
     ? 100
     : Math.round((stepIndex / totalSteps) * 100);
@@ -256,6 +261,7 @@ export default function TutorialGame({ lesson, onExit, onNextLesson }) {
             id="tutorial-board"
             position={fen}
             onPieceDrop={onPieceDrop}
+            onPieceClick={onPieceClick}
             onSquareClick={onSquareClick}
             boardOrientation="white"
             arePiecesDraggable={!completed && !waitingOpponent}

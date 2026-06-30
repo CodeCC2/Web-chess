@@ -149,6 +149,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
     pendingPromotion,
     setPendingPromotion,
     onPieceDrop,
+    onPieceClick,
     onSquareClick,
     handlePromotionSelect,
     resetBoardUi,
@@ -272,6 +273,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
               position={fen}
               animationDuration={BOT_ANIMATION_MS}
               onPieceDrop={onPieceDrop}
+              onPieceClick={onPieceClick}
               onSquareClick={onSquareClick}
               onPromotionCheck={() => false}
               boardOrientation={playerColor === "black" ? "black" : "white"}
