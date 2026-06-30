@@ -32,9 +32,10 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
   const { squareStyles } = useSettings();
   const boardSize = useBoardWidth();
   const gameRef = useRef(new Chess(puzzle.fen));
-  const playerColor = useRef(
-    puzzle.fen.includes(" w ") ? "w" : "b"
-  ).current;
+  const playerColor = useMemo(
+    () => (puzzle.fen.includes(" w ") ? "w" : "b"),
+    [puzzle.fen]
+  );
 
   const [fen, setFen] = useState(puzzle.fen);
   const [moveIndex, setMoveIndex] = useState(0);
@@ -283,6 +284,11 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
     ]
   );
 
+  const onPieceClick = useCallback(
+    (_piece, square) => onSquareClick(square),
+    [onSquareClick]
+  );
+
   const handlePromotionSelect = useCallback(
     (piece) => {
       if (!pendingPromotion) return;
@@ -320,6 +326,7 @@ export default function PuzzleGame({ puzzle, onExit, onNext }) {
             id="puzzle-board"
             position={fen}
             onPieceDrop={onPieceDrop}
+            onPieceClick={onPieceClick}
             onSquareClick={onSquareClick}
             onPromotionCheck={() => false}
             boardOrientation={boardOrientation}

@@ -264,6 +264,7 @@ export default function App() {
     pendingPromotion,
     setPendingPromotion,
     onPieceDrop,
+    onPieceClick,
     onSquareClick,
     handlePromotionSelect,
     resetBoardUi,
@@ -826,6 +827,7 @@ export default function App() {
               id="online-board"
               position={state?.fen}
               onPieceDrop={onPieceDrop}
+              onPieceClick={onPieceClick}
               onSquareClick={onSquareClick}
               onPromotionCheck={() => false}
               boardOrientation={color === "black" ? "black" : "white"}

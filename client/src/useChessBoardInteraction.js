@@ -117,6 +117,11 @@ export function useChessBoardInteraction({
     ]
   );
 
+  const onPieceClick = useCallback(
+    (_piece, square) => onSquareClick(square),
+    [onSquareClick]
+  );
+
   const resetBoardUi = useCallback(() => {
     setMoveFrom(null);
     setOptionSquares({});
@@ -129,6 +134,7 @@ export function useChessBoardInteraction({
     pendingPromotion,
     setPendingPromotion,
     onPieceDrop,
+    onPieceClick,
     onSquareClick,
     handlePromotionSelect,
     resetBoardUi,
