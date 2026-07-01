@@ -17,6 +17,11 @@ import SettingsButton from "./components/SettingsButton.jsx";
 import { useSettings } from "./SettingsContext.jsx";
 import { copyPgn, downloadPgn } from "./pgnUtils.js";
 import { BOARD_STYLE, useBoardWidth, gameOverVariantFromInfo, gameOverTitle } from "./boardTheme.js";
+import {
+  materialBalance,
+  formatMaterialScore,
+  materialScoreTitle,
+} from "./materialScore.js";
 
 const DIFFICULTY_LABEL = DIFFICULTY_LABELS;
 
@@ -250,6 +255,21 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
   const isPlayerTurn = info.turn === playerColor && !gameOver;
   const inCheck = info.status === "check" && isPlayerTurn;
 
+  const material = materialBalance(gameRef.current);
+
+  const renderMaterialScore = (color) => {
+    const score = color === "white" ? material.white : material.black;
+    if (score === 0) return null;
+    return (
+      <span
+        className={`player-card-material${score > 0 ? " ahead" : " behind"}`}
+        title={materialScoreTitle(score)}
+      >
+        {formatMaterialScore(score)}
+      </span>
+    );
+  };
+
   return (
     <div className="app game">
       <header className="game-header">
@@ -348,6 +368,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
                   <span className="player-card-name">
                     {playerColor === "white" ? "คุณ" : "คอมพิวเตอร์"}
                   </span>
+                  {renderMaterialScore("white")}
                 </div>
                 <span className="player-card-status status-online" />
               </div>
@@ -365,6 +386,7 @@ export default function LocalGame({ difficulty, playerColor, onExit }) {
                   <span className="player-card-name">
                     {playerColor === "black" ? "คุณ" : "คอมพิวเตอร์"}
                   </span>
+                  {renderMaterialScore("black")}
                 </div>
                 <span className="player-card-status status-online" />
               </div>

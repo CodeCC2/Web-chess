@@ -521,6 +521,21 @@ input:focus {
   text-overflow: ellipsis;
 }
 
+.player-card-material {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.player-card-material.ahead {
+  color: var(--success);
+}
+
+.player-card-material.behind {
+  color: var(--danger, #ef4444);
+}
+
 .player-card-status {
   width: 10px;
   height: 10px;
