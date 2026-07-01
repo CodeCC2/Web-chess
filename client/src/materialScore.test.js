@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Chess } from "chess.js";
 import {
   materialBalance,
+  materialBalanceFromHistory,
   formatMaterialScore,
   PIECE_SCORE,
 } from "./materialScore.js";
@@ -31,4 +32,10 @@ test("formatMaterialScore", () => {
   assert.equal(formatMaterialScore(5), "+5");
   assert.equal(formatMaterialScore(-1), "-1");
   assert.equal(formatMaterialScore(0), "0");
+});
+
+test("materialBalanceFromHistory replays SAN moves", () => {
+  const bal = materialBalanceFromHistory(["e4", "d5", "exd5"]);
+  assert.equal(bal.white, PIECE_SCORE.p);
+  assert.equal(bal.black, -PIECE_SCORE.p);
 });

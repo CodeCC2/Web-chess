@@ -16,6 +16,7 @@ import ChessClock from "./ChessClock.jsx";
 import { isLegalMove } from "./promotionUtils.js";
 import { TIME_CONTROL_OPTIONS } from "./clockUtils.js";
 import RoomChat from "./RoomChat.jsx";
+import { materialBalanceFromHistory } from "./materialScore.js";
 import { useChessBoardInteraction } from "./useChessBoardInteraction.js";
 import {
   lastMoveHighlight,
@@ -278,6 +279,11 @@ export default function App() {
   const boardSquareStyles = useMemo(
     () => ({ ...optionSquares, ...lastMoveHighlight(state?.lastMove) }),
     [optionSquares, state?.lastMove]
+  );
+
+  const material = useMemo(
+    () => materialBalanceFromHistory(state?.history),
+    [state?.history]
   );
 
   useEffect(() => {
@@ -949,6 +955,7 @@ export default function App() {
                 occupied={state?.players?.white}
                 isYou={color === "white"}
                 isTurn={state?.turn === "white" && !gameOver}
+                materialScore={material.white}
               />
               <PlayerStatusCard
                 color="black"
@@ -957,6 +964,7 @@ export default function App() {
                 occupied={state?.players?.black}
                 isYou={color === "black"}
                 isTurn={state?.turn === "black" && !gameOver}
+                materialScore={material.black}
               />
             </div>
 
