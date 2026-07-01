@@ -16,7 +16,7 @@
     "start": "npm --workspace server run start",
     "serve": "npm run build && npm run start",
     "lint": "npm --workspace client run lint",
-    "test": "node --test server/src/roomUtils.test.js client/src/promotionUtils.test.js client/src/bot.test.js",
+    "test": "node --test server/src/roomUtils.test.js client/src/promotionUtils.test.js client/src/bot.test.js client/src/materialScore.test.js",
     "favicon": "node scripts/generate-favicon.mjs",
     "icon:apply": "node scripts/apply-icon.mjs",
     "ship": "bash scripts/ship.sh"
