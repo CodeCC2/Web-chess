@@ -1,3 +1,5 @@
+import MaterialScoreBadge from "./MaterialScoreBadge.jsx";
+
 function statusIcon(connected, occupied) {
   if (connected) return "online";
   if (occupied) return "away";
@@ -11,6 +13,7 @@ export default function PlayerStatusCard({
   occupied,
   isYou,
   isTurn,
+  materialScore,
 }) {
   const label = color === "white" ? "ขาว" : "ดำ";
   const status = statusIcon(connected, occupied);
@@ -28,6 +31,7 @@ export default function PlayerStatusCard({
           {isYou && <span className="player-card-you">คุณ</span>}
         </span>
         <span className="player-card-name">{name || "รอผู้เล่น..."}</span>
+        <MaterialScoreBadge score={materialScore} />
       </div>
       <span className={`player-card-status status-${status}`} title={status}>
         <span className="sr-only">{status}</span>

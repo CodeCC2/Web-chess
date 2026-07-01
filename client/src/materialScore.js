@@ -1,4 +1,5 @@
 /** Display piece values for material tally (pawn=1, rook=5, etc.). */
+import { Chess } from "chess.js";
 export const PIECE_SCORE = {
   p: 1,
   n: 3,
@@ -31,6 +32,19 @@ export function materialBalance(game) {
     }
   }
   return { white, black };
+}
+
+/** Replay SAN moves from the starting position to tally material. */
+export function materialBalanceFromHistory(history = []) {
+  const game = new Chess();
+  for (const san of history) {
+    try {
+      game.move(san);
+    } catch {
+      break;
+    }
+  }
+  return materialBalance(game);
 }
 
 export function formatMaterialScore(score) {
